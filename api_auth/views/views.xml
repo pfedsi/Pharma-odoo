@@ -1,0 +1,23 @@
+<odoo>
+  <data>
+    <record id="view_users_form_inherit_api_auth" model="ir.ui.view">
+        <field name="name">res.users.form.inherit.api.auth</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="API User Info">
+                    <group>
+                        <field name="first_name"/>
+                        <field name="last_name"/>
+                        <field name="cin"/>
+                        <field name="birth_date"/>
+                        <field name="phone_number"/>
+                        <field name="role"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+  </data>
+</odoo>

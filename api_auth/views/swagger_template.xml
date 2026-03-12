@@ -1,0 +1,34 @@
+<odoo>
+    <template id="swagger_template">
+        <html>
+            <head>
+                <title>API Documentation</title>
+                <link rel="stylesheet" type="text/css" href="/api_auth/static/swagger/swagger-ui.css"/>
+            </head>
+            <body>
+                <div id="swagger-ui"></div>
+
+                <script src="/api_auth/static/swagger/swagger-ui-bundle.js"></script>
+                <script src="/api_auth/static/swagger/swagger-ui-standalone-preset.js"></script>
+                <script>
+                    window.onload = function() {
+                        const ui = SwaggerUIBundle({
+                            url: "/api/swagger.json",
+                            dom_id: '#swagger-ui',
+                            deepLinking: true,
+                            presets: [
+                                SwaggerUIBundle.presets.apis,
+                                SwaggerUIStandalonePreset
+                            ],
+                            plugins: [
+                                SwaggerUIBundle.plugins.DownloadUrl
+                            ],
+                            layout: "StandaloneLayout"
+                        });
+                        window.ui = ui;
+                    };
+                </script>
+            </body>
+        </html>
+    </template>
+</odoo>

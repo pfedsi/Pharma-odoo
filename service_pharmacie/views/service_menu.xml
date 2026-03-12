@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <menuitem id="menu_pharmacy_root"
+                  name="Pharmacie"
+                  sequence="10"/>
+
+        <menuitem id="menu_pharmacy_configuration"
+                  name="Configuration"
+                  parent="menu_pharmacy_root"
+                  sequence="20"/>
+
+        <menuitem id="menu_pharmacy_service"
+                  name="Services"
+                  parent="menu_pharmacy_configuration"
+                  action="action_pharmacy_service"
+                  sequence="10"/>
+    </data>
+</odoo>

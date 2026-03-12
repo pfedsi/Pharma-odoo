@@ -1,0 +1,7 @@
+<odoo>
+    <template id="custom_favicon" inherit_id="web.layout">
+        <xpath expr="//head" position="inside">
+            <link rel="icon" type="image/png" href="/my_module/static/src/img/favicon1.png?v=120"/>
+        </xpath>
+    </template>
+</odoo>
