@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             LISTE — Localisation (singleton, pas de création ni suppression)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <record id="view_pharmacy_localization_list" model="ir.ui.view">
+            <field name="name">pharmacy.localization.list</field>
+            <field name="model">pharmacy.localization</field>
+            <field name="arch" type="xml">
+                <list string="Localisation" create="false" delete="false">
+                    <field name="nom"               string="Pharmacie"/>
+                    <field name="pharmacie_adresse" string="Adresse"/>
+                    <field name="pharmacie_lat"     string="Latitude"/>
+                    <field name="pharmacie_lon"     string="Longitude"/>
+                    <field name="rayon_validation"  string="Rayon GPS (m)"/>
+                    <field name="nb_reservations"   string="Nb réservations"/>
+                    <field name="maps_url"          string="Google Maps" widget="url"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             FORMULAIRE — Localisation (pas de création ni suppression)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <record id="view_pharmacy_localization_form" model="ir.ui.view">
+            <field name="name">pharmacy.localization.form</field>
+            <field name="model">pharmacy.localization</field>
+            <field name="arch" type="xml">
+                <form string="Localisation pharmacie" create="false" delete="false">
+                    <sheet>
+
+                        <group>
+                            <field name="nom"
+                                   string="Nom de la pharmacie"
+                                   placeholder="Ex : Pharmacie Ibn Sina – Tunis"/>
+                        </group>
+
+                        <separator string="Adresse et validation GPS"/>
+                        <group>
+                            <group string="Adresse">
+                                <field name="pharmacie_adresse"
+                                       string="Adresse complète"
+                                       placeholder="Ex : 12 Rue Ibn Khaldoun, Tunis 1000"/>
+                                <field name="rayon_validation"
+                                       string="Rayon de validation GPS (m)"/>
+                                <field name="maps_url"
+                                       string="Lien Google Maps"
+                                       widget="url"
+                                       readonly="1"/>
+                            </group>
+                            <group string="Coordonnées GPS">
+                                <field name="pharmacie_lat" string="Latitude"/>
+                                <field name="pharmacie_lon" string="Longitude"/>
+                            </group>
+                        </group>
+
+                        <separator string="Carte interactive"/>
+                        <field name="pharmacie_lat"
+                               widget="map_picker"
+                               lat_field="pharmacie_lat"
+                               lon_field="pharmacie_lon"
+                               nolabel="1"/>
+
+                        <notebook>
+                            <page string="Réservations rattachées" name="reservations">
+                                <p>
+                                    <i class="fa fa-calendar text-info me-1"/>
+                                    Toutes les réservations associées à cette localisation.
+                                </p>
+                                <field name="reservation_ids" nolabel="1" readonly="1">
+                                    <list string="Réservations"
+                                          decoration-success="statut == 'arrive'"
+                                          decoration-muted="statut == 'annule'"
+                                          decoration-info="statut == 'en_attente'">
+                                        <field name="display_name"           string="Réservation"/>
+                                        <field name="user_id"                string="Client"/>
+                                        <field name="service_id"             string="Service"/>
+                                        <field name="date_heure_reservation" string="Créneau" widget="datetime"/>
+                                        <field name="statut"                 string="Statut"/>
+                                        <field name="ticket_id"              string="Ticket"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             RECHERCHE
+             ═══════════════════════════════════════════════════════════════════ -->
+        <record id="view_pharmacy_localization_search" model="ir.ui.view">
+            <field name="name">pharmacy.localization.search</field>
+            <field name="model">pharmacy.localization</field>
+            <field name="arch" type="xml">
+                <search string="Rechercher une localisation">
+                    <field name="nom"/>
+                    <field name="pharmacie_adresse"/>
+                </search>
+            </field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             ACTION
+             ═══════════════════════════════════════════════════════════════════ -->
+        <record id="action_pharmacy_localization" model="ir.actions.act_window">
+            <field name="name">Localisation</field>
+            <field name="res_model">pharmacy.localization</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_pharmacy_localization_search"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Aucune localisation configurée
+                </p>
+                <p>
+                    Créez la localisation de la pharmacie via le shell Odoo
+                    ou contactez votre administrateur.
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,17 +1,33 @@
+# -*- coding: utf-8 -*-
 {
-    'name': "service_pharmacie",
-    'summary': "Gestion des services de pharmacie",
-    'description': "Module de gestion des services de pharmacie",
-    'author': "My Company",
-    'website': "https://www.yourcompany.com",
-    'category': 'Uncategorized',
-    'version': '0.1',
-    'depends': ['base', 'web'],
-    'data': [
-        'security/ir.model.access.csv',
-        'views/service_views.xml',
-        'views/service_menu.xml',
+    "name": "Pharmacy Queue – Service",
+    "version": "19.0.1.0.0",
+    "summary": "Réservations et files d'attente pharmacie",
+    "category": "Healthcare",
+    "depends": ["base", "mail", "web"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/localization_views.xml",  
+        "views/display_templates.xml",
+        "views/service_views.xml",      
+        "views/reservation_views.xml",    
+        "views/queue_views.xml",
+        "views/ticket_views.xml",
+        "views/rattachement_views.xml",
+        "views/service_menu.xml",          
     ],
-    'installable': True,
-    'application': True,
+    "assets": {
+        "web.assets_backend": [
+            "service_pharmacie/static/src/js/map_picker.js",
+            "service_pharmacie/static/src/scss/map_picker.scss",
+        ],
+        'point_of_sale._assets_pos': [
+        'service_pharmacie/static/src/scss/rattachement.scss',
+        'service_pharmacie/static/src/js/pos_rattachement_button.js',
+        'service_pharmacie/static/src/xml/pos_rattachement_button.xml',
+        ],
+    },
+    "installable": True,
+    "application": True,
+    "license": "LGPL-3",
 }

@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-inherit="point_of_sale.Navbar" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('pos-rightheader')]" position="before">
+
+            <div class="rattachement-wrapper position-relative me-3">
+
+                <div class="rattachement-bar">
+
+    <div class="rattachement-chip rattachement-poste-box">
+        <span class="rattachement-chip-label">Poste</span>
+        <span id="rattachement-poste-label" class="rattachement-chip-value">2</span>
+    </div>
+
+    <button class="btn rattachement-btn rattachement-btn-light"
+            type="button"
+            onclick="window.dispatchEvent(new CustomEvent('toggle-rattachement-menu'))">
+        <i class="fa fa-link"/>
+        <span>Rattachement</span>
+    </button>
+
+    <div class="rattachement-ticket-box">
+        <div class="rattachement-ticket-label">Ticket en cours</div>
+        <div id="current-ticket-label" class="rattachement-ticket-value">cnam-009</div>
+    </div>
+
+    <button class="btn rattachement-btn rattachement-btn-primary"
+            type="button"
+            onclick="window.dispatchEvent(new CustomEvent('call-next-ticket'))">
+        <i class="fa fa-arrow-right"/>
+        <span>Suivant</span>
+    </button>
+
+    <button class="btn rattachement-btn rattachement-btn-success"
+            type="button"
+            onclick="window.dispatchEvent(new CustomEvent('finish-current-ticket'))">
+        <i class="fa fa-check"/>
+        <span>Terminer</span>
+    </button>
+
+    <div id="rattachement-status" class="rattachement-status-box">
+        <div class="rattachement-status-line">
+            <span class="rattachement-status-label">Mode</span>
+            <span id="rattachement-mode-label" class="rattachement-status-value">Manuel</span>
+        </div>
+        <div class="rattachement-status-line">
+            <span class="rattachement-status-label">Fichier</span>
+            <span id="rattachement-queue-label" class="rattachement-status-value">cnam</span>
+        </div>
+    </div>
+
+</div>
+
+                <!-- Menu dropdown -->
+                <div id="rattachement-menu" class="rattachement-menu shadow">
+                    <div class="rattachement-menu-title">Choisir un mode</div>
+
+                    <button class="dropdown-item rattachement-menu-item"
+                            type="button"
+                            onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'manuel'}}))">
+                        <i class="fa fa-hand-pointer-o me-2"/>
+                        Manuel
+                    </button>
+
+                    <button class="dropdown-item rattachement-menu-item"
+                            type="button"
+                            onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'auto_attente'}}))">
+                        <i class="fa fa-clock-o me-2"/>
+                        Automatique (attente)
+                    </button>
+
+                    <button class="dropdown-item rattachement-menu-item"
+                            type="button"
+                            onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'prioritaire'}}))">
+                        <i class="fa fa-star me-2"/>
+                        Prioritaire
+                    </button>
+
+                    <div id="rattachement-sublist" class="rattachement-sublist"></div>
+                </div>
+
+            </div>
+
+        </xpath>
+    </t>
+
+</templates>

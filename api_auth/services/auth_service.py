@@ -23,10 +23,10 @@ class AuthService:
 
     @staticmethod
     def register(data: dict) -> dict:
-        email      = (data.get('email') or '').strip().lower()
-        password   = data.get('password', '').strip()
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password', '').strip()
         first_name = (data.get('first_name') or '').strip()
-        last_name  = (data.get('last_name') or '').strip()
+        last_name = (data.get('last_name') or '').strip()
 
         if not email or not password:
             return {'success': False, 'error': 'Email and password are required', 'status': 400}
@@ -37,19 +37,43 @@ class AuthService:
         if Users.search([('login', '=', email)], limit=1):
             return {'success': False, 'error': 'An account with this email already exists', 'status': 409}
 
-        user = Users.create({
-            'name':         f'{first_name} {last_name}',
-            'login':        email,
-            'password':     password,
-            'first_name':   first_name,
-            'last_name':    last_name,
-            'cin':          data.get('cin') or '',
-            'birth_date':   data.get('birth_date') or False,
-            'phone_number': data.get('phone_number') or '',
-            'user_role':    'client',
-        })
-        return {'success': True, 'user_id': user.id, 'message': 'Registration successful', 'status': 201}
+        portal_group = request.env.ref('base.group_portal')
+        internal_group = request.env.ref('base.group_user')
+        company = request.env['res.company'].sudo().search([], limit=1)
 
+        vals = {
+            'name': f'{first_name} {last_name}',
+            'login': email,
+            'email': email,
+            'password': password,
+            'first_name': first_name,
+            'last_name': last_name,
+            'cin': data.get('cin') or '',
+            'birth_date': data.get('birth_date') or False,
+            'phone_number': data.get('phone_number') or '',
+            'user_role': 'client',
+            'active': True,
+        }
+
+        if company:
+            vals.update({
+                'company_id': company.id,
+                'company_ids': [(6, 0, [company.id])],
+            })
+
+        user = Users.create(vals)
+
+        # probablement le bon champ dans ton instance
+        user.write({
+            'group_ids': [(4, portal_group.id), (3, internal_group.id)]
+        })
+
+        return {
+            'success': True,
+            'user_id': user.id,
+            'message': 'Registration successful',
+            'status': 201,
+        }
     # ------------------------------------------------------------------
     # Login / logout
     # ------------------------------------------------------------------
@@ -169,6 +193,9 @@ class AuthService:
                 return {'success': False, 'error': 'No company found', 'status': 500}
         
             _logger.error("Google create user company_id=%s", company.id)
+            portal_group = request.env.ref('base.group_portal')
+            internal_group = request.env.ref('base.group_user')
+
             user = Users.create({
                 'name': f'{first_name} {last_name}'.strip(),
                 'login': email,
@@ -182,8 +209,11 @@ class AuthService:
                 'active': True,
                 'company_id': company.id,
                 'company_ids': [(6, 0, [company.id])],
-
             })
+
+            user.write({
+    'group_ids': [(4, portal_group.id), (3, internal_group.id)]
+})
 
 
 

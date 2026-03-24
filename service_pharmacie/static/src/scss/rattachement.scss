@@ -1,0 +1,217 @@
+.rattachement-wrapper {
+    position: relative;
+}
+
+.rattachement-bar {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    background: #ffffff;
+    border: 1px solid #dfe3e8;
+    border-radius: 14px;
+    padding: 6px 8px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+/* Tous les blocs ont la meme hauteur */
+.rattachement-chip,
+.rattachement-ticket-box,
+.rattachement-status-box,
+.rattachement-btn {
+    min-height: 68px;
+    height: 68px;
+    box-sizing: border-box;
+}
+
+/* Bloc poste */
+.rattachement-chip {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 65px;
+    padding: 6px 8px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.rattachement-chip-label {
+    font-size: 10px;
+    color: #64748b;
+    line-height: 1.1;
+    margin-bottom: 4px;
+}
+
+.rattachement-chip-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+}
+
+/* Bloc ticket courant */
+.rattachement-ticket-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100px;
+    min-width: 100px;
+    max-width: 100px;
+    padding: 6px 8px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #eef4ff 0%, #dbeafe 100%);
+    border: 1px solid #bfd6ff;
+    overflow: hidden;
+}
+
+.rattachement-ticket-label {
+    font-size: 10px;
+    color: #2563eb;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    line-height: 1.1;
+}
+
+.rattachement-ticket-value {
+    font-size: 9px;
+    font-weight: 800;
+    color: #1e3a8a;
+    line-height: 1.05;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Boutons */
+.rattachement-btn {
+    border-radius: 12px;
+    font-weight: 700;
+    padding: 0 10px;
+    min-width: 95px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    transition: all 0.18s ease;
+    font-size: 13px;
+}
+
+.rattachement-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.rattachement-btn-light {
+    background: #f8fafc;
+    color: #0f172a;
+    border: 1px solid #dbe1e8;
+}
+
+.rattachement-btn-light:hover {
+    background: #f1f5f9;
+    color: #020617;
+}
+
+.rattachement-btn-primary {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.rattachement-btn-primary:hover {
+    background: #1d4ed8;
+    color: #ffffff;
+}
+
+.rattachement-btn-success {
+    background: #16a34a;
+    color: #ffffff;
+}
+
+.rattachement-btn-success:hover {
+    background: #15803d;
+    color: #ffffff;
+}
+
+/* Bloc statut */
+.rattachement-status-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 140px;
+    padding: 6px 8px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.rattachement-status-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+.rattachement-status-label {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.rattachement-status-value {
+    color: #0f172a;
+    font-weight: 700;
+    text-align: right;
+    max-width: 110px;
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Menu */
+.rattachement-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    min-width: 290px;
+    background: #ffffff;
+    border: 1px solid #dfe3e8;
+    border-radius: 14px;
+    padding: 10px;
+    z-index: 9999;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+}
+
+.rattachement-menu-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 8px;
+    padding: 4px 6px;
+}
+
+.rattachement-menu-item {
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-weight: 500;
+    color: #0f172a;
+}
+
+.rattachement-menu-item:hover {
+    background: #f1f5f9;
+}
+
+.rattachement-sublist {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.rattachement-poste-item,
+.rattachement-queue-item,
+.rattachement-service-item {
+    border-radius: 10px !important;
+    margin-bottom: 4px;
+}

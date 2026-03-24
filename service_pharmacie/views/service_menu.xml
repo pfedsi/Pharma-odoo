@@ -1,19 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data>
-        <menuitem id="menu_pharmacy_root"
-                  name="Pharmacie"
-                  sequence="10"/>
+<record id="action_pharmacy_display_screen" model="ir.actions.act_url">
+    <field name="name">Affichage écran</field>
+    <field name="type">ir.actions.act_url</field>
+    <field name="url">/pharmacy/display</field>
+    <field name="target">new</field>
+</record>
+    <!-- Menu racine -->
+    <menuitem id="menu_pharmacy_root"
+              name="Espace Pharmacien"
+              sequence="10"/>
 
-        <menuitem id="menu_pharmacy_configuration"
-                  name="Configuration"
-                  parent="menu_pharmacy_root"
-                  sequence="20"/>
+    <!-- Tout regrouper -->
+    <menuitem id="menu_pharmacy_management"
+              name="Gestion"
+              parent="menu_pharmacy_root"
+              sequence="10"/>
 
-        <menuitem id="menu_pharmacy_service"
-                  name="Services"
-                  parent="menu_pharmacy_configuration"
-                  action="action_pharmacy_service"
-                  sequence="10"/>
-    </data>
+    <menuitem id="menu_pharmacy_reservations"
+              name="Réservations"
+              parent="menu_pharmacy_management"
+              action="action_pharmacy_reservation"
+              sequence="10"/>
+
+    <menuitem id="menu_pharmacy_service"
+              name="Services"
+              parent="menu_pharmacy_management"
+              action="action_pharmacy_service"
+              sequence="20"/>
+
+    <menuitem id="menu_pharmacy_rattachement"
+              name="Rattachements"
+              parent="menu_pharmacy_management"
+              action="action_pharmacy_rattachement"
+              sequence="30"/>
+
+    <menuitem id="menu_pharmacy_ticket"
+              name="Tickets"
+              parent="menu_pharmacy_management"
+              action="action_pharmacy_ticket"
+              sequence="40"/>
+
+    <menuitem id="menu_pharmacy_localization"
+              name="Localisation"
+              parent="menu_pharmacy_management"
+              action="action_pharmacy_localization"
+              sequence="50"/>
+     <menuitem id="menu_pharmacy_display"
+                  name="Affichage écran"
+                  parent="menu_pharmacy_management"
+                  action="action_pharmacy_display_screen"
+                  sequence="60"/>
+
 </odoo>

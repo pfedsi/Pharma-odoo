@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <template id="pharmacy_display_page" name="Pharmacy Display Page">
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Affichage Pharmacie</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+                    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap"/>
+                    <link rel="stylesheet" href="/service_pharmacie/static/src/css/pharmacy_display.css?v=6"/>
+                    <script type="text/javascript" src="/web/static/lib/jquery/jquery.js"></script>
+                    <script type="text/javascript" src="/service_pharmacie/static/src/js/pharmacy_display_v1.js?v=4"></script>
+                </head>
+                    <body class="pharmacy-display-body" style="position: relative; isolation: isolate;">
+
+                    <div class="display-wrapper">
+
+                        <!-- ══ HEADER ══ -->
+                        <header class="display-header">
+                            <div class="header-logo">
+                                <div class="logo-cross"></div>
+                                <div class="logo-text">
+                                    <div class="logo-name">Affichage des tickets</div>
+                                    <div class="logo-tagline">Pharmacie · File d&#x2019;attente</div>
+                                </div>
+                            </div>
+                            <div class="header-center">
+                                <div class="header-live">
+                                    <div class="live-dot"></div>
+                                    <div class="live-label">En service</div>
+                                </div>
+                            </div>
+                            <div class="header-clock">
+                                <div id="display-clock">
+                                    <div class="clock-time">--:--:--</div>
+                                    <div class="clock-date">&#x2014;</div>
+                                </div>
+                            </div>
+                        </header>
+
+                        <!-- ══ BODY ══ -->
+                        <div class="display-body">
+                            <div id="display-grid" class="display-grid"></div>
+                        </div>
+
+                        <!-- ══ FOOTER ══ -->
+                        <footer class="display-footer">
+                            <div class="footer-label">Info</div>
+                            <div class="ticker-track">
+                                <div class="ticker-inner">
+                                    Veuillez patienter &#x2014; un assistant va vous prendre en charge
+                                    &#xA0;&#xB7;&#xA0;
+                                    Gardez votre ticket bien visible
+                                    &#xA0;&#xB7;&#xA0;
+                                    Rendez-vous au poste indiqué lorsque votre numéro s&#x2019;affiche
+                                    &#xA0;&#xB7;&#xA0;
+                                    Pour toute urgence signalez-vous à l&#x2019;accueil
+                                    &#xA0;&#xB7;&#xA0;
+                                </div>
+                            </div>
+                        </footer>
+
+                    </div>
+
+                    <!-- ══ POPUP ══ -->
+                    <div id="ticket-popup" class="ticket-popup hidden">
+                        <div class="ticket-popup-content">
+                            <div class="popup-bar"></div>
+                            <div class="popup-header">
+                                <div class="popup-cross"></div>
+                                <div class="popup-title">Ticket appelé</div>
+                            </div>
+                            <div class="popup-grid">
+                                <div class="popup-cell green-cell">
+                                    <div class="popup-cell-label">Ticket</div>
+                                    <div id="popup-ticket-number">&#x2014;</div>
+                                </div>
+                                <div class="popup-cell">
+                                    <div class="popup-cell-label">Poste</div>
+                                    <div id="popup-counter-number">&#x2014;</div>
+                                </div>
+                            </div>
+                            <div id="popup-queue-name">&#xA0;</div>
+                            <div class="popup-progress">
+                                <div class="popup-progress-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </body>
+            </html>
+        </template>
+    </data>
+</odoo>

@@ -1,116 +1,103 @@
+# -*- coding: utf-8 -*-
+"""CONTROLLER — ServiceController (mis à jour)
+Ajout : GET /api/pharmacy/services/<id>/horaires
+"""
 from odoo import http
-from odoo.http import request, Response
-import json
+from ..services import ServiceService
+from ._base import ok, error, handle_service_errors
 
 
-class PharmacyServiceController(http.Controller):
+class ServiceController(http.Controller):
 
-    def _serialize_service(self, service):
-        return {
-            "id": service.id,
-            "nom": service.nom,
-            "description": service.description or "",
-            "dure_estimee_par_defaut": service.dure_estimee_par_defaut or 0,
-            "active": service.active,
+    # ── 1. Liste des services actifs ──────────────────────────────────────────
+
+    @http.route("/api/pharmacy/services",
+                auth="public", methods=["GET"], csrf=False)
+    @handle_service_errors
+    def list_services(self):
+        """
+        GET /api/pharmacy/services
+
+        Response 200 :
+        {
+          "services": [
+            {
+              "id": 1,
+              "nom": "Ordonnances",
+              "heure_ouverture": "08:00",
+              "heure_fermeture": "18:00",
+              "duree_creneau": 30,
+              "horaires": [ ... ],
+              ...
+            }
+          ]
+        }
+        """
+        svc = ServiceService(http.request.env)
+        return ok({"services": svc.list_active()})
+
+    # ── 2. Détail d'un service ────────────────────────────────────────────────
+
+    @http.route("/api/pharmacy/services/<int:service_id>",
+                auth="public", methods=["GET"], csrf=False)
+    @handle_service_errors
+    def get_service(self, service_id):
+        """
+        GET /api/pharmacy/services/3
+
+        Response 200 : { "service": Service }
+        Response 404 : { "error": "..." }
+        """
+        svc = ServiceService(http.request.env)
+        return ok({"service": svc.get_by_id(service_id)})
+
+    # ── 3. Horaires journaliers d'un service ──────────────────────────────────
+
+    @http.route("/api/pharmacy/services/<int:service_id>/horaires",
+                auth="public", methods=["GET"], csrf=False)
+    @handle_service_errors
+    def get_horaires(self, service_id):
+        """
+        GET /api/pharmacy/services/3/horaires
+
+        Retourne les horaires journaliers configurés pour ce service.
+        Les jours sans entrée utilisent les horaires par défaut du service.
+
+        Response 200 :
+        {
+          "service_id": 3,
+          "nom": "Ordonnances",
+          "horaires_par_defaut": {
+            "ouverture": "08:00",
+            "fermeture": "18:00",
+            "intervalle_minutes": 30
+          },
+          "horaires": [
+            { "jour_index": "0", "jour": "Lundi",    "actif": true,  "ouverture": "08:00", "fermeture": "17:00" },
+            { "jour_index": "1", "jour": "Mardi",    "actif": true,  "ouverture": "08:00", "fermeture": "17:00" },
+            { "jour_index": "5", "jour": "Samedi",   "actif": true,  "ouverture": "09:00", "fermeture": "13:00" },
+            { "jour_index": "6", "jour": "Dimanche", "actif": false, "ouverture": null,    "fermeture": null    }
+          ]
         }
 
-    def _json_response(self, data, status=200):
-        return Response(
-            json.dumps(data),
-            status=status,
-            content_type='application/json;charset=utf-8'
-        )
+        Response 404 : { "error": "Service introuvable." }
+        """
+        svc = ServiceService(http.request.env)
+        return ok(svc.get_horaires(service_id))
 
-    @http.route('/api/services', type='http', auth='public', methods=['GET'], csrf=False)
-    def get_services(self, **kwargs):
-        domain = []
-        active = kwargs.get('active')
+    # ── 4. Créneaux disponibles ───────────────────────────────────────────────
 
-        if active is None:
-            domain.append(('active', '=', True))
-        else:
-            active_bool = str(active).lower() in ('true', '1', 'yes')
-            domain.append(('active', '=', active_bool))
+    @http.route("/api/pharmacy/services/<int:service_id>/slots",
+                auth="public", methods=["GET"], csrf=False)
+    @handle_service_errors
+    def get_slots(self, service_id):
+        """
+        GET /api/pharmacy/services/3/slots?date=2026-03-17
 
-        services = request.env['pharmacy.service'].sudo().search(domain)
-
-        return self._json_response({
-            "success": True,
-            "services": [self._serialize_service(s) for s in services]
-        }, 200)
-
-    @http.route('/api/services/<int:service_id>', type='http', auth='public', methods=['GET'], csrf=False)
-    def get_service(self, service_id, **kwargs):
-        service = request.env['pharmacy.service'].sudo().browse(service_id)
-
-        if not service.exists():
-            return self._json_response({
-                "success": False,
-                "message": "Service introuvable"
-            }, 404)
-
-        return self._json_response({
-            "success": True,
-            "service": self._serialize_service(service)
-        }, 200)
-
-    @http.route('/api/services', type='http', auth='user', methods=['POST'], csrf=False)
-    def create_service(self, **kwargs):
-        data = json.loads(request.httprequest.data or b"{}")
-
-        if not data.get("nom"):
-            return self._json_response({
-                "success": False,
-                "message": "Le champ nom est obligatoire"
-            }, 400)
-
-        service = request.env['pharmacy.service'].sudo().create({
-            "nom": data.get("nom"),
-            "description": data.get("description"),
-            "dure_estimee_par_defaut": data.get("dure_estimee_par_defaut", 0),
-            "active": data.get("active", True),
-        })
-
-        return self._json_response({
-            "success": True,
-            "service": self._serialize_service(service)
-        }, 201)
-
-    @http.route('/api/services/<int:service_id>', type='http', auth='user', methods=['PUT'], csrf=False)
-    def update_service(self, service_id, **kwargs):
-        service = request.env['pharmacy.service'].sudo().browse(service_id)
-        if not service.exists():
-            return self._json_response({
-                "success": False,
-                "message": "Service introuvable"
-            }, 404)
-
-        data = json.loads(request.httprequest.data or b"{}")
-        vals = {}
-
-        for field in ['nom', 'description', 'dure_estimee_par_defaut', 'active']:
-            if field in data:
-                vals[field] = data[field]
-
-        service.write(vals)
-
-        return self._json_response({
-            "success": True,
-            "service": self._serialize_service(service)
-        }, 200)
-
-    @http.route('/api/services/<int:service_id>', type='http', auth='user', methods=['DELETE'], csrf=False)
-    def delete_service(self, service_id, **kwargs):
-        service = request.env['pharmacy.service'].sudo().browse(service_id)
-        if not service.exists():
-            return self._json_response({
-                "success": False,
-                "message": "Service introuvable"
-            }, 404)
-
-        service.write({"active": False})
-
-        return self._json_response({
-            "success": True,
-            "message": "Service désactivé"
-        }, 200)
+        Response 200 : { "service_id": ..., "slots": [ ... ] }
+        Response 400 : { "error": "Format de date invalide." }
+        Response 404 : { "error": "Service introuvable." }
+        """
+        date_str = http.request.params.get("date") or __import__("datetime").date.today().isoformat()
+        svc = ServiceService(http.request.env)
+        return ok(svc.get_slots(service_id, date_str))

@@ -1,60 +1,180 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             LISTE — Services
+             ═══════════════════════════════════════════════════════════════════ -->
         <record id="view_pharmacy_service_list" model="ir.ui.view">
             <field name="name">pharmacy.service.list</field>
             <field name="model">pharmacy.service</field>
             <field name="arch" type="xml">
-                <list string="Services">
+                <list string="Services"
+                      decoration-muted="active == False"
+                      decoration-info="overnight == True">
                     <field name="nom"/>
-                    <field name="dure_estimee_par_defaut"/>
-                    <field name="active"/>
+                    <field name="dure_estimee_par_defaut" string="Durée (min)"/>
+                    <field name="heure_ouverture"         string="Ouverture"  widget="float_time"/>
+                    <field name="heure_fermeture"         string="Fermeture"  widget="float_time"/>
+                    <field name="overnight"               string="Nuit"       widget="boolean_toggle"/>
+                    <field name="duree_creneau"           string="Intervalle (min)"/>
+                    <field name="active"                  widget="boolean_toggle"/>
                 </list>
             </field>
         </record>
 
+        <!-- ═══════════════════════════════════════════════════════════════════
+             FORMULAIRE — Service
+             ═══════════════════════════════════════════════════════════════════ -->
         <record id="view_pharmacy_service_form" model="ir.ui.view">
             <field name="name">pharmacy.service.form</field>
             <field name="model">pharmacy.service</field>
             <field name="arch" type="xml">
                 <form string="Service">
                     <sheet>
+
                         <group>
-                            <field name="nom"/>
-                            <field name="dure_estimee_par_defaut"/>
-                            <field name="active"/>
+                            <field name="nom"
+                                   string="Nom du service"
+                                   placeholder="Ex : Ordonnances"/>
                         </group>
+
+                        <separator string="Configuration générale"/>
                         <group>
-                            <field name="description"/>
+                            <group string="Général">
+                                <field name="dure_estimee_par_defaut"
+                                       string="Durée estimée / client (min)"/>
+                                <field name="active"
+                                       string="Service actif"
+                                       widget="boolean_toggle"/>
+                            </group>
+                            <group string="Horaires par défaut">
+                                <field name="heure_ouverture"
+                                       string="De"
+                                       widget="float_time"
+                                       help="Heure d'ouverture. Ex : 22.0 pour 22h00 (pharmacie de nuit)."/>
+                                <field name="heure_fermeture"
+                                       string="À"
+                                       widget="float_time"
+                                       help="Si inférieure à l'ouverture, l'horaire traverse minuit automatiquement."/>
+                                <field name="duree_creneau"
+                                       string="Intervalle entre réservations (min)"/>
+                                <field name="overnight"
+                                       string="Pharmacie de nuit"
+                                       readonly="1"/>
+                            </group>
                         </group>
+
+                        <group string="Horaire traversant minuit détecté"
+                               invisible="heure_fermeture >= heure_ouverture">
+                            <field name="heure_ouverture"
+                                   string="Ouverture"
+                                   widget="float_time"
+                                   readonly="1"/>
+                            <field name="heure_fermeture"
+                                   string="Fermeture (lendemain)"
+                                   widget="float_time"
+                                   readonly="1"/>
+                        </group>
+
+                        <separator string="Description"/>
+                        <group>
+                            <field name="description"
+                                   nolabel="1"
+                                   placeholder="Décrivez ce service…"/>
+                        </group>
+
+                        <notebook>
+
+                            <page string="Horaires par jour" name="horaires">
+                                <p>
+                                    <i class="fa fa-info-circle text-info me-1"/>
+                                    Les jours non configurés utilisent les horaires par défaut.
+                                </p>
+                                <field name="horaire_ids" nolabel="1">
+                                    <list editable="bottom"
+                                          decoration-info="actif == True and heure_fermeture &lt; heure_ouverture"
+                                          decoration-muted="actif == False">
+                                        <field name="jour_semaine"    string="Jour"/>
+                                        <field name="actif"           string="Ouvert"          widget="boolean_toggle"/>
+                                        <field name="heure_ouverture" string="De"              widget="float_time" readonly="not actif"/>
+                                        <field name="heure_fermeture" string="À"               widget="float_time" readonly="not actif"/>
+                                        <field name="overnight"       string="Traverse minuit" readonly="1"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <page string="File d'attente" name="queue">
+                                <p>
+                                    <i class="fa fa-users text-primary me-1"/>
+                                    La file d'attente est créée automatiquement à la création du service.
+                                </p>
+                                <group string="File d'attente associée">
+                                    <field name="queue_id" string="File d'attente" readonly="1"/>
+                                </group>
+                            </page>
+
+                        </notebook>
+
                     </sheet>
                 </form>
             </field>
         </record>
 
+        <!-- ═══════════════════════════════════════════════════════════════════
+             RECHERCHE
+             ═══════════════════════════════════════════════════════════════════ -->
         <record id="view_pharmacy_service_search" model="ir.ui.view">
             <field name="name">pharmacy.service.search</field>
             <field name="model">pharmacy.service</field>
             <field name="arch" type="xml">
                 <search string="Rechercher un service">
+
                     <field name="nom"/>
                     <field name="description"/>
-                    <filter string="Actifs" name="filter_active" domain="[('active', '=', True)]"/>
-                    <filter string="Inactifs" name="filter_inactive" domain="[('active', '=', False)]"/>
+
+                    <separator/>
+                    <filter string="Actifs"
+                            name="filter_active"
+                            domain="[('active','=',True)]"/>
+                    <filter string="Archivés"
+                            name="filter_inactive"
+                            domain="[('active','=',False)]"/>
+                    <separator/>
+                    <filter string="Pharmacies de nuit"
+                            name="filter_overnight"
+                            domain="[('overnight','=',True)]"/>
+                    <separator/>
+                    <filter string="Grouper par statut"
+                            name="group_active"
+                            context="{'group_by': 'active'}"/>
+                    <filter string="Grouper par nuit/jour"
+                            name="group_overnight"
+                            context="{'group_by': 'overnight'}"/>
+
                 </search>
             </field>
         </record>
 
+        <!-- ═══════════════════════════════════════════════════════════════════
+             ACTION
+             ═══════════════════════════════════════════════════════════════════ -->
         <record id="action_pharmacy_service" model="ir.actions.act_window">
             <field name="name">Services</field>
             <field name="res_model">pharmacy.service</field>
             <field name="view_mode">list,form</field>
             <field name="search_view_id" ref="view_pharmacy_service_search"/>
+            <field name="context">{'active_test': False}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
                     Créer votre premier service
                 </p>
+                <p>
+                    Définissez les services proposés à la pharmacie
+                    pour organiser vos files d'attente et réservations.
+                </p>
             </field>
         </record>
+
     </data>
 </odoo>

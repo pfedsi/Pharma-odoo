@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pharmacy_queue_list" model="ir.ui.view">
+        <field name="name">pharmacy.queue.list</field>
+        <field name="model">pharmacy.queue</field>
+        <field name="arch" type="xml">
+            <list string="Files d'attente"
+                  create="0"
+                  delete="0"
+                  decoration-muted="active == False">
+                <field name="name" string="File d'attente"/>
+                <field name="service_id"/>
+                <field name="position_client_virtuel" string="Position client virtuel"/>
+                <field name="nb_en_attente" string="En attente"/>
+                <field name="temps_attente_estime" string="Attente (min)"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pharmacy_queue_form" model="ir.ui.view">
+        <field name="name">pharmacy.queue.form</field>
+        <field name="model">pharmacy.queue</field>
+        <field name="arch" type="xml">
+            <form string="File d'attente" create="0" delete="0">
+                <sheet>
+
+                    <widget name="web_ribbon"
+                            title="Archivé"
+                            bg_color="bg-danger"
+                            invisible="active"/>
+
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-primary text-white py-2 px-3">
+                                    <span class="fw-bold">
+                                        <i class="fa fa-info-circle me-2"/>Informations
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <group>
+                                        <field name="service_id" readonly="1"/>
+                                        <field name="position_client_virtuel"/>
+                                        <field name="active" widget="boolean_toggle"/>
+                                    </group>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-header bg-light py-2 px-3">
+                                    <span class="fw-bold text-muted">
+                                        <i class="fa fa-tachometer me-2"/>Statut
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <group>
+                                        <field name="nb_en_attente" string="En attente"/>
+                                        <field name="temps_attente_estime" string="Attente estimée (min)"/>
+                                    </group>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <notebook>
+                        <page string="Tickets" icon="fa-ticket">
+                            <field name="ticket_ids" readonly="1">
+                                <list decoration-success="etat == 'termine'"
+                                      decoration-warning="etat == 'appele'"
+                                      decoration-info="etat == 'en_attente'"
+                                      decoration-danger="etat == 'annule'">
+                                    <field name="name" string="N° Ticket"/>
+                                    <field name="service_id"/>
+                                    <field name="type_ticket"/>
+                                    <field name="etat"
+                                           widget="badge"
+                                           decoration-success="etat == 'termine'"
+                                           decoration-warning="etat == 'appele'"
+                                           decoration-info="etat == 'en_attente'"
+                                           decoration-danger="etat == 'annule'"/>
+                                    <field name="position" string="Position"/>
+                                    <field name="heure_creation" widget="datetime"/>
+                                    <field name="priorite" widget="priority"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pharmacy_queue" model="ir.actions.act_window">
+        <field name="name">Files d'attente</field>
+        <field name="res_model">pharmacy.queue</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune file d'attente disponible
+            </p>
+            <p>Les files sont créées automatiquement depuis les services.</p>
+        </field>
+    </record>
+
+</odoo>

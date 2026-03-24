@@ -1,2 +1,15 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_pharmacy_service,pharmacy.service,model_pharmacy_service,,1,1,1,1
+access_pharmacy_service_user,pharmacy.service.user,model_pharmacy_service,base.group_user,1,0,0,0
+access_pharmacy_service_manager,pharmacy.service.manager,model_pharmacy_service,base.group_system,1,1,1,1
+access_pharmacy_queue_user,pharmacy.queue.user,model_pharmacy_queue,base.group_user,1,0,0,0
+access_pharmacy_queue_manager,pharmacy.queue.manager,model_pharmacy_queue,base.group_system,1,1,1,1
+access_pharmacy_ticket_user,pharmacy.ticket.user,model_pharmacy_ticket,base.group_user,1,1,1,0
+access_pharmacy_ticket_manager,pharmacy.ticket.manager,model_pharmacy_ticket,base.group_system,1,1,1,1
+access_pharmacy_reservation_user,pharmacy.reservation.user,model_pharmacy_reservation,base.group_user,1,1,1,0
+access_pharmacy_reservation_manager,pharmacy.reservation.manager,model_pharmacy_reservation,base.group_system,1,1,1,1
+access_pharmacy_rattachement_user,pharmacy.rattachement.user,model_pharmacy_rattachement,base.group_user,1,0,0,0
+access_pharmacy_rattachement_manager,pharmacy.rattachement.manager,model_pharmacy_rattachement,base.group_system,1,1,1,1
+access_pharmacy_service_horaire_user,pharmacy.service.horaire.user,model_pharmacy_service_horaire,base.group_user,1,0,0,0
+access_pharmacy_service_horaire_manager,pharmacy.service.horaire.manager,model_pharmacy_service_horaire,base.group_system,1,1,1,1
+access_pharmacy_localization,pharmacy.localization,model_pharmacy_localization,,1,1,1,1
+access_pharmacy_reservation,pharmacy.reservation,model_pharmacy_reservation,,1,1,1,1

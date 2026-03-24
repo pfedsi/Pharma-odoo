@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════
+         LISTE — Rattachements
+         ═══════════════════════════════════════════ -->
+    <record id="view_pharmacy_rattachement_list" model="ir.ui.view">
+        <field name="name">pharmacy.rattachement.list</field>
+        <field name="model">pharmacy.rattachement</field>
+        <field name="arch" type="xml">
+            <list string="Rattachements"
+                  decoration-muted="active == False"
+                  decoration-warning="mode_rattachement == 'prioritaire'">
+                <field name="display_name"         string="Référence"/>
+                <field name="assistant_id"/>
+                <field name="file_id"/>
+                <field name="mode_rattachement"/>
+                <field name="poste_number"/>
+                <field name="service_prioritaire_id"/>
+                <field name="date_debut"/>
+                <field name="date_fin"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         FORMULAIRE — Rattachement
+         ═══════════════════════════════════════════ -->
+    <record id="view_pharmacy_rattachement_form" model="ir.ui.view">
+        <field name="name">pharmacy.rattachement.form</field>
+        <field name="model">pharmacy.rattachement</field>
+        <field name="arch" type="xml">
+            <form string="Rattachement">
+                <sheet>
+
+                    <group string="Affectation">
+                        <field name="display_name" readonly="1"/>
+                        <field name="assistant_id"/>
+                        <field name="file_id"/>
+                        <field name="poste_number"/>
+                        <field name="mode_rattachement"
+                               widget="radio"
+                               options="{'horizontal': True}"/>
+                        <field name="service_prioritaire_id"
+                               invisible="mode_rattachement != 'prioritaire'"
+                               required="mode_rattachement == 'prioritaire'"/>
+                    </group>
+
+                    <group string="Validité">
+                        <field name="date_debut"/>
+                        <field name="date_fin"/>
+                        <field name="active" widget="boolean_toggle"/>
+                    </group>
+
+                </sheet>
+
+                <footer>
+                    <button special="cancel"
+                            string="Fermer"
+                            class="btn-secondary"/>
+                </footer>
+
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         RECHERCHE
+         ═══════════════════════════════════════════ -->
+    <record id="view_pharmacy_rattachement_search" model="ir.ui.view">
+        <field name="name">pharmacy.rattachement.search</field>
+        <field name="model">pharmacy.rattachement</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher un rattachement">
+                <field name="assistant_id"/>
+                <field name="file_id"/>
+                <field name="poste_number"/>
+                <filter string="Actifs"
+                        name="filter_active"
+                        domain="[('active','=',True)]"/>
+                <filter string="Inactifs"
+                        name="filter_inactive"
+                        domain="[('active','=',False)]"/>
+                <filter string="Prioritaire"
+                        name="filter_prioritaire"
+                        domain="[('mode_rattachement','=','prioritaire')]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         ACTION
+         ═══════════════════════════════════════════ -->
+    <record id="action_pharmacy_rattachement" model="ir.actions.act_window">
+        <field name="name">Rattachements</field>
+        <field name="res_model">pharmacy.rattachement</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pharmacy_rattachement_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créer votre premier rattachement
+            </p>
+            <p>Associez un assistant à une file d'attente.</p>
+        </field>
+    </record>
+
+</odoo>
