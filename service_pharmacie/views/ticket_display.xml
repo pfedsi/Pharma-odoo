@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+        <template id="ticket_display_page" name="Ticket Display Page">
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Prise de ticket — Pharmacie</title>
+                    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+                    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&amp;family=DM+Mono:wght@400;500&amp;display=swap"/>
+                    <link rel="stylesheet" href="/service_pharmacie/static/src/css/ticket_display.css?v=2"/>
+                    <script type="text/javascript" src="/service_pharmacie/static/src/js/ticket_display.js?v=2"></script>
+                </head>
+                <body class="ticket-display-body">
+
+                    <div class="ticket-page">
+
+                        <!-- ══ TOP BAR ══ -->
+                        <header class="ticket-topbar">
+                            <div class="topbar-brand">
+                                <div class="topbar-icon"></div>
+                                <div>
+                                    <div class="topbar-name">Q-Pharma</div>
+                                    <div class="topbar-sub">Gestion de la file d&#x2019;attente</div>
+                                </div>
+                            </div>
+                            <div class="topbar-status">
+                                <span class="topbar-status-dot"></span>
+                                En service
+                            </div>
+                        </header>
+
+                        <!-- ══ MAIN ══ -->
+                        <main class="ticket-main">
+
+                            <!-- Heading -->
+                            <div class="ticket-heading">
+                                <h1>Prendre un ticket</h1>
+                                <p>Sélectionnez un service pour obtenir votre numéro d&#x2019;attente.</p>
+                            </div>
+
+                            <!-- Message -->
+                            <div id="ticket-display-message" class="ticket-message hidden"></div>
+
+                            <!-- Loader -->
+                            <div id="ticket-display-loader" class="ticket-loader hidden">
+                                Chargement des files actives&#x2026;
+                            </div>
+
+                            <!-- Queues grid -->
+                            <div id="ticket-display-queues" class="ticket-queues"></div>
+
+                        </main>
+
+                    </div>
+
+                </body>
+            </html>
+        </template>
+    </data>
+</odoo>

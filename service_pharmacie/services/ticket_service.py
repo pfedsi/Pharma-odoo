@@ -8,7 +8,6 @@ class TicketService:
     def __init__(self, env):
         self.env = env
 
-    # ── GET ticket par ID ─────────────────────────────────────────────────────
 
     def get_by_id(self, ticket_id: int) -> dict:
         ticket = self.env["pharmacy.ticket"].sudo().browse(ticket_id)

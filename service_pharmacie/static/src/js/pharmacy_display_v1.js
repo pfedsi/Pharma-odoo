@@ -1,195 +1,208 @@
-"use strict";
+// ═══════════════════════════════════════════════════════════════════
+//  Pharmacy Display — JS principal
+//  - Affiche uniquement les tickets APPELÉS (pas la liste en attente)
+//  - Compteurs "En cours" + "En attente" toujours visibles
+//  - "Service disponible" quand aucun ticket actif
+//  - File d'attente des popups : le suivant attend la fin du son
+// ═══════════════════════════════════════════════════════════════════
 
-/*
- * previousAppeles : Map<rattachement_id, ticket_name|null>
- * On stocke null pour "poste vide" et un nom pour "poste occupé".
- * Le popup se déclenche quand on passe de null → nom (nouveau ticket appelé).
- */
-let previousAppeles = {};
-let popupTimer = null;
-let firstLoad = true;
-
-/* ══ Horloge ══ */
-function renderClock() {
+// ── Horloge ─────────────────────────────────────────────────────────
+function updateClock() {
     const el = document.getElementById("display-clock");
     if (!el) return;
-    const now = new Date();
-    el.innerHTML = `
-        <div class="clock-time">${now.toLocaleTimeString("fr-FR", {
-            hour: "2-digit", minute: "2-digit", second: "2-digit"
-        })}</div>
-        <div class="clock-date">${now.toLocaleDateString("fr-FR", {
-            weekday: "long", day: "2-digit", month: "long"
-        })}</div>
-    `;
+    const now  = new Date();
+    const time = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const date = now.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+    const timeEl = el.querySelector(".clock-time");
+    const dateEl = el.querySelector(".clock-date");
+    if (timeEl) timeEl.textContent = time;
+    if (dateEl) dateEl.textContent = date.charAt(0).toUpperCase() + date.slice(1);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── État global ──────────────────────────────────────────────────────
+let lastData      = null;
+let popupQueue    = [];
+let popupBusy     = false;
+let currentSpeech = null;
+
+// ── Synthèse vocale ──────────────────────────────────────────────────
+function speak(text, onEnd) {
+    if (!window.speechSynthesis) { onEnd && onEnd(); return; }
+    const utter   = new SpeechSynthesisUtterance(text);
+    utter.lang    = "fr-FR";
+    utter.rate    = 0.95;
+    utter.pitch   = 1;
+    utter.onend   = () => { currentSpeech = null; onEnd && onEnd(); };
+    currentSpeech = utter;
+    window.speechSynthesis.speak(utter);
 }
 
-/* ══ Popup ══ */
-function showPopup(ticketName, queueName, posteNumber) {
+// ── File d'attente des popups ────────────────────────────────────────
+function enqueuePopup(ticketName, posteNumber, queueName) {
+    popupQueue.push({ ticketName, posteNumber, queueName });
+    if (!popupBusy) processNextPopup();
+}
+
+function processNextPopup() {
+    if (popupQueue.length === 0) { popupBusy = false; return; }
+    popupBusy = true;
+    const { ticketName, posteNumber, queueName } = popupQueue.shift();
+    showPopup(ticketName, posteNumber, queueName, () => processNextPopup());
+}
+
+// ── Popup ────────────────────────────────────────────────────────────
+const POPUP_DURATION = 6000;
+
+function showPopup(ticketName, posteNumber, queueName, onDone) {
     const popup    = document.getElementById("ticket-popup");
     const ticketEl = document.getElementById("popup-ticket-number");
-    const queueEl  = document.getElementById("popup-queue-name");
     const posteEl  = document.getElementById("popup-counter-number");
-    if (!popup || !ticketEl || !queueEl || !posteEl) return;
+    const queueEl  = document.getElementById("popup-queue-name");
+    const bar      = popup && popup.querySelector(".popup-progress-bar");
 
-    ticketEl.textContent = ticketName  || "--";
-    queueEl.textContent  = queueName   || "";
-    posteEl.textContent  = posteNumber || "--";
+    if (!popup) { onDone && onDone(); return; }
 
-    /* Reset + relance animation progress bar */
-    const bar = popup.querySelector(".popup-progress-bar");
-    if (bar) {
-        bar.style.animation = "none";
-        void bar.offsetWidth;                          // force reflow
-        bar.style.animation = "drain 5s linear forwards";
-    }
+    if (ticketEl) ticketEl.textContent = ticketName  || "—";
+    if (posteEl)  posteEl.textContent  = posteNumber || "—";
+    if (queueEl)  queueEl.textContent  = queueName   || "";
 
     popup.classList.remove("hidden");
+    popup.classList.add("visible");
 
-    if (popupTimer) clearTimeout(popupTimer);
-    popupTimer = setTimeout(() => {
-        popup.classList.add("hidden");
-    }, 5000);
-}
-
-/* ══ Détection nouveau ticket appelé ══
- *
- * Règle : popup déclenché quand
- *   - le poste avait null (vide) et reçoit un ticket  → nouvel appel
- *   - le poste avait un ticket et reçoit un AUTRE ticket → changement d'appel
- * Pas de popup au premier chargement (firstLoad) pour éviter le flood initial.
- */
-function detectNewAppels(queues) {
-    const snapshot = {};   // nouveau snapshot à construire
-
-    queues.forEach(queue => {
-        /* Construction du snapshot complet de tous les postes */
-        (queue.appeles || []).forEach(item => {
-            const key = String(item.rattachement_id);
-            snapshot[key] = {
-                ticket_name:  item.ticket_name  || null,
-                poste_number: item.poste_number || "--",
-                queue_name:   queue.queue_name  || "",
-            };
-        });
-    });
-
-    if (!firstLoad) {
-        /* Comparer snapshot actuel vs précédent */
-        Object.entries(snapshot).forEach(([key, cur]) => {
-            const prev = previousAppeles[key] || null;
-            const prevName = prev ? prev.ticket_name : null;
-
-            if (cur.ticket_name && cur.ticket_name !== prevName) {
-                /* Nouveau ticket sur ce poste → popup */
-                showPopup(cur.ticket_name, cur.queue_name, cur.poste_number);
-            }
-        });
+    if (bar) {
+        bar.style.transition = "none";
+        bar.style.width      = "100%";
+        void bar.offsetWidth;
+        bar.style.transition = `width ${POPUP_DURATION}ms linear`;
+        bar.style.width      = "0%";
     }
 
-    previousAppeles = snapshot;
-    firstLoad = false;
+    const speechText = `Ticket ${ticketName}, veuillez vous rendre au poste ${posteNumber}`;
+    speak(speechText, () => {
+        setTimeout(() => {
+            popup.classList.remove("visible");
+            popup.classList.add("hidden");
+            onDone && onDone();
+        }, 400);
+    });
 }
 
-/* ══ Rendu grille ══ */
-function renderQueues(queues) {
+// ── Rendu de la grille ────────────────────────────────────────────────
+function renderGrid(queues) {
     const grid = document.getElementById("display-grid");
     if (!grid) return;
 
-    if (!queues || !queues.length) {
-        grid.innerHTML = `<div class="empty-state">Aucune file active</div>`;
+    if (!queues || queues.length === 0) {
+        grid.innerHTML = "";
         return;
     }
 
-    grid.innerHTML = queues.map(queue => {
-        const appeles   = queue.appeles    || [];
-        const enAttente = queue.en_attente || [];
+    grid.innerHTML = queues.map(q => {
+        const appeles   = q.appeles   || [];
+        const enAttente = q.en_attente || [];
+        const isEmpty   = appeles.length === 0 && enAttente.length === 0;
         const total     = appeles.length + enAttente.length;
 
-        /* ── Section appelés ── */
-        let appelHtml = "";
-        if (appeles.length) {
-            appelHtml = appeles.map(item => `
-                <div class="ticket-line is-appele">
-                    <div class="tl-top">
-                        <div class="ticket-label">Guichet ${item.poste_number}</div>
-                        <div class="ticket-value">${item.ticket_name}</div>
+        // ── Badge en-tête
+        const badge = isEmpty
+            ? `<span class="queue-badge queue-badge--free">Libre</span>`
+            : `<span class="queue-badge queue-badge--waiting">${total} ticket${total > 1 ? "s" : ""}</span>`;
+
+        // ── Ligne de stats (toujours visible)
+        const statsRow = `
+            <div class="card-stats">
+                <div class="stat-cell">
+                    <div class="stat-number ${appeles.length > 0 ? "stat-number--active" : "stat-number--zero"}">${appeles.length}</div>
+                    <div class="stat-label">En cours</div>
+                </div>
+                <div class="stat-cell">
+                    <div class="stat-number ${enAttente.length > 0 ? "stat-number--active" : "stat-number--zero"}">${enAttente.length}</div>
+                    <div class="stat-label">En attente</div>
+                </div>
+            </div>`;
+
+        // ── Corps : tickets appelés uniquement — jamais la liste en attente
+        let bodyContent;
+
+        if (isEmpty) {
+            bodyContent = `
+                <div class="available-state">
+                    <span class="available-state__dot"></span>
+                    <span class="available-state__label">Service disponible</span>
+                </div>`;
+        } else {
+            const appelRows = appeles.map(a => `
+                <div class="ticket-called">
+                    <div class="ticket-called__top">
+                        <div class="ticket-called__label">Ticket · En cours</div>
+                        <div class="ticket-called__number">${a.ticket_name || "—"}</div>
                     </div>
-                    <div class="tl-bot">
-                        <div class="poste-label">Poste</div>
-                        <div class="poste-value">${item.poste_number}</div>
+                    <div class="ticket-called__bottom">
+                        <div>
+                            <div class="poste-label">Poste</div>
+                            <div class="poste-value">${a.poste_number || "—"}</div>
+                        </div>
                     </div>
                 </div>`).join("");
-        } else {
-            appelHtml = `<div class="no-ticket">Aucun ticket en cours d'appel</div>`;
-        }
 
-        /* ── Section en attente ── */
-        let attenteHtml = "";
-        if (enAttente.length) {
-            attenteHtml = `
-                <div class="section-label">File d'attente</div>
-                ${enAttente.map((item, index) => `
-                <div class="ticket-line is-waiting">
-                    <div class="tl-top">
-                        <div class="ticket-label">Position ${index + 1}</div>
-                        <div class="ticket-value">${item.ticket_name}</div>
-                    </div>
-                    <div class="tl-bot">
-                        <div class="poste-label">Statut</div>
-                        <div class="poste-value">En attente</div>
-                    </div>
-                </div>`).join("")}`;
+            bodyContent = `
+                <div class="card-body">
+                    ${appeles.length > 0
+                        ? `<div class="section-label">Ticket${appeles.length > 1 ? "s" : ""} appelé${appeles.length > 1 ? "s" : ""}</div>${appelRows}`
+                        : ""}
+                </div>`;
         }
 
         return `
-            <div class="display-card">
+            <div class="display-card${isEmpty ? " is-available" : ""}">
                 <div class="card-header">
-                    <div class="queue-title">${queue.queue_name || "--"}</div>
-                    <div class="queue-badge">${total} ticket${total !== 1 ? "s" : ""}</div>
+                    <span class="queue-title">${q.queue_name || "—"}</span>
+                    ${badge}
                 </div>
-                <div class="card-body">
-                    ${appelHtml}
-                    ${attenteHtml}
-                </div>
+                ${statsRow}
+                ${bodyContent}
             </div>`;
     }).join("");
 }
 
-/* ══ Fetch ══ */
-async function fetchData() {
-    try {
-        const response = await fetch("/pharmacy/display/data", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({}),
+// ── Détection des nouveaux appels ─────────────────────────────────────
+function detectNewCalls(newQueues, oldQueues) {
+    if (!oldQueues) return;
+
+    const oldAppeles = new Set();
+    (oldQueues || []).forEach(q =>
+        (q.appeles || []).forEach(a => oldAppeles.add(`${q.queue_id}-${a.ticket_id}`))
+    );
+
+    (newQueues || []).forEach(q => {
+        (q.appeles || []).forEach(a => {
+            const key = `${q.queue_id}-${a.ticket_id}`;
+            if (!oldAppeles.has(key)) {
+                enqueuePopup(a.ticket_name, a.poste_number, q.queue_name);
+            }
         });
+    });
+}
 
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+// ── Polling API ───────────────────────────────────────────────────────
+async function fetchAndRender() {
+    try {
+        const response = await fetch("/pharmacy/display/data");
+        const res      = await response.json();
 
-        const result = await response.json();
-        if (!result.success) return;
+        if (!res?.success) return;
 
-        const queues = result.queues || [];
-        detectNewAppels(queues);
-        renderQueues(queues);
+        const queues = res.queues || [];
+        detectNewCalls(queues, lastData);
+        lastData = queues;
+        renderGrid(queues);
 
-    } catch (e) {
-        _logger.error && _logger.error(e);
-        const grid = document.getElementById("display-grid");
-        if (grid) grid.innerHTML = `
-            <div class="empty-state" style="color:#dc2626;">
-                Erreur de connexion — nouvelle tentative dans 2s
-            </div>`;
+    } catch (err) {
+        console.error("[display] fetchAndRender:", err);
     }
 }
 
-/* ══ Init ══ */
-function startDisplay() {
-    renderClock();
-    setInterval(renderClock, 1000);
-    fetchData();
-    setInterval(fetchData, 2000);
-}
-
-document.addEventListener("DOMContentLoaded", startDisplay);
+fetchAndRender();
+setInterval(fetchAndRender, 3000);

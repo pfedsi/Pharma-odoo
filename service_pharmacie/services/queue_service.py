@@ -10,11 +10,12 @@ class QueueService:
 
     # ── API publique ──────────────────────────────────────────────────────────
 
-    def list_active(self) -> list:
+    def list_active(self, type_affichage: str | None = None) -> list:
         """
         Retourne uniquement les files actives.
         Si un service est lié, il doit aussi être actif.
         Les queues sans service sont incluses si elles sont actives.
+        Si type_affichage est 'physique' ou 'virtuel', filtre par type du service lié.
         """
         queues = self.env["pharmacy.queue"].sudo().search([
             ("active", "=", True),
@@ -23,6 +24,12 @@ class QueueService:
         queues = queues.filtered(
             lambda q: not q.service_id or q.service_id.active
         )
+
+        if type_affichage in ("physique", "virtuel"):
+            queues = queues.filtered(
+                lambda q: not q.service_id
+                or q.service_id.type_affichage in (type_affichage, "les_deux")
+            )
 
         return [self._to_dict(q) for q in queues]
 
@@ -46,7 +53,7 @@ class QueueService:
             "id": q.id,
             "name": q.name,
             "display_name": q.display_name,
-            "active": q.active,  # ✅ affiché dans la réponse
+            "active": q.active,
             "service_id": service.id if service else None,
             "service": service.nom if service else None,
             "nb_en_attente": int(q.nb_en_attente or 0),

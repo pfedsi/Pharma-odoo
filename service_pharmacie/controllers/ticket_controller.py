@@ -55,30 +55,10 @@ class TicketController(http.Controller):
         tickets = svc.list_mine(uid, statut=statut)
         return ok({"tickets": tickets, "total": len(tickets)})
 
-    # ── 3. Créer un ticket ────────────────────────────────────────────────────
 
-    @http.route("/api/pharmacy/tickets",
-                auth="user", methods=["POST"], csrf=False)
+    @http.route("/api/pharmacy/tickets", auth="public", methods=["POST"], csrf=False, type="http")
     @handle_service_errors
-    def create_ticket(self):
-        """
-        POST /api/pharmacy/tickets
-        Content-Type: application/x-www-form-urlencoded
-          ou
-        Content-Type: application/json
-
-        Paramètres :
-          - queue_id   (int, requis)
-          - type_ticket (str, optionnel : 'physique' | 'virtuel', défaut : 'physique')
-
-        Response 200 : { "ticket": { ... } }
-        Response 400 : { "error": "queue_id est requis." }
-        Response 401 : { "error": "Authentification requise." }
-        """
-        uid = current_uid()
-        if not uid:
-            return error("Authentification requise.", 401)
-
+    def create_ticket(self, **post):
         params = http.request.params
 
         try:
@@ -93,6 +73,9 @@ class TicketController(http.Controller):
         if type_ticket not in ("physique", "virtuel"):
             return error("type_ticket doit être 'physique' ou 'virtuel'.", 400)
 
-        svc    = TicketService(http.request.env)
+        # utilisateur public ou logique métier dédiée
+        uid = http.request.env.ref("base.public_user").id
+
+        svc = TicketService(http.request.env)
         ticket = svc.create_ticket(queue_id, uid, type_ticket=type_ticket)
         return ok({"ticket": ticket})

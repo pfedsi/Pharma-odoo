@@ -1,217 +1,581 @@
-.rattachement-wrapper {
-    position: relative;
+// ═══════════════════════════════════════════════════════════════
+//  RATTACHEMENT NAVBAR — Pharmacie POS
+//  Design : flat, compact, intégré — palette nuit professionnelle
+// ═══════════════════════════════════════════════════════════════
+
+// ── Tokens ──────────────────────────────────────────────────────
+$c-base        : #0d1117;
+$c-surface-1   : #161b27;
+$c-surface-2   : #1c2333;
+$c-surface-3   : #212840;
+
+$c-border-lo   : rgba(255, 255, 255, .07);
+$c-border-md   : rgba(255, 255, 255, .12);
+$c-border-hi   : rgba(255, 255, 255, .20);
+
+$c-text-1      : rgba(255, 255, 255, .85);
+$c-text-2      : rgba(255, 255, 255, .50);
+$c-text-3      : rgba(255, 255, 255, .28);
+
+$c-indigo      : #4f46e5;
+$c-indigo-hi   : #818cf8;
+$c-emerald     : #10b981;
+$c-emerald-hi  : #34d399;
+$c-amber       : #f59e0b;
+$c-rose        : #f43f5e;
+
+$h-bar         : 38px;
+$h-btn         : 28px;
+$r-bar         : 10px;
+$r-btn         : 7px;
+$r-menu        : 12px;
+$r-card        : 7px;
+
+// ── Mixins ───────────────────────────────────────────────────────
+@mixin flex-center { display: flex; align-items: center; justify-content: center; }
+@mixin flex-col    { display: flex; flex-direction: column; }
+@mixin ease        { transition: all .14s ease; }
+@mixin micro-label {
+  font-size: 8px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: $c-text-3;
+  line-height: 1;
 }
 
-.rattachement-bar {
-    display: flex;
-    align-items: stretch;
-    gap: 6px;
-    background: #ffffff;
-    border: 1px solid #dfe3e8;
-    border-radius: 14px;
-    padding: 6px 8px;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+// ── Keyframes ─────────────────────────────────────────────────────
+@keyframes ratt-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: .3;  transform: scale(.6); }
 }
 
-/* Tous les blocs ont la meme hauteur */
-.rattachement-chip,
-.rattachement-ticket-box,
-.rattachement-status-box,
-.rattachement-btn {
-    min-height: 68px;
-    height: 68px;
-    box-sizing: border-box;
+@keyframes ratt-ticket-flash {
+  0%   { color: $c-text-1; }
+  30%  { color: $c-emerald-hi; }
+  100% { color: $c-indigo-hi; }
 }
 
-/* Bloc poste */
-.rattachement-chip {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 65px;
-    padding: 6px 8px;
-    border-radius: 12px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+@keyframes ratt-menu-in {
+  from { opacity: 0; transform: translateY(-4px) scale(.99); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.rattachement-chip-label {
-    font-size: 10px;
-    color: #64748b;
-    line-height: 1.1;
-    margin-bottom: 4px;
+@keyframes ratt-bump {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
 }
 
-.rattachement-chip-value {
-    font-size: 15px;
-    font-weight: 700;
-    color: #0f172a;
-    line-height: 1.1;
+@keyframes ratt-shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
 }
 
-/* Bloc ticket courant */
-.rattachement-ticket-box {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    width: 100px;
-    min-width: 100px;
-    max-width: 100px;
-    padding: 6px 8px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, #eef4ff 0%, #dbeafe 100%);
-    border: 1px solid #bfd6ff;
-    overflow: hidden;
+// ══════════════════════════════════════════════════════════════════
+//  WRAPPER
+// ══════════════════════════════════════════════════════════════════
+.ratt-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
-.rattachement-ticket-label {
-    font-size: 10px;
-    color: #2563eb;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    font-weight: 700;
-    margin-bottom: 4px;
-    line-height: 1.1;
-}
+// ══════════════════════════════════════════════════════════════════
+//  BARRE PRINCIPALE
+// ══════════════════════════════════════════════════════════════════
+.ratt-bar {
+  display: flex;
+  align-items: center;
+  height: $h-bar;
+  background: $c-surface-1;
+  border-radius: $r-bar;
+  border: .5px solid $c-border-lo;
+  padding: 0 4px;
+  position: relative;
 
-.rattachement-ticket-value {
-    font-size: 9px;
-    font-weight: 800;
-    color: #1e3a8a;
-    line-height: 1.05;
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-
-/* Boutons */
-.rattachement-btn {
-    border-radius: 12px;
-    font-weight: 700;
-    padding: 0 10px;
-    min-width: 95px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    border: none;
-    transition: all 0.18s ease;
-    font-size: 13px;
-}
-
-.rattachement-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
-}
-
-.rattachement-btn-light {
-    background: #f8fafc;
-    color: #0f172a;
-    border: 1px solid #dbe1e8;
-}
-
-.rattachement-btn-light:hover {
-    background: #f1f5f9;
-    color: #020617;
-}
-
-.rattachement-btn-primary {
-    background: #2563eb;
-    color: #ffffff;
-}
-
-.rattachement-btn-primary:hover {
-    background: #1d4ed8;
-    color: #ffffff;
-}
-
-.rattachement-btn-success {
-    background: #16a34a;
-    color: #ffffff;
-}
-
-.rattachement-btn-success:hover {
-    background: #15803d;
-    color: #ffffff;
-}
-
-/* Bloc statut */
-.rattachement-status-box {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-width: 140px;
-    padding: 6px 8px;
-    border-radius: 12px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-}
-
-.rattachement-status-line {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 12px;
-    line-height: 1.45;
-}
-
-.rattachement-status-label {
-    color: #64748b;
-    font-weight: 500;
-}
-
-.rattachement-status-value {
-    color: #0f172a;
-    font-weight: 700;
-    text-align: right;
-    max-width: 110px;
-    white-space: normal;
-    word-break: break-word;
-}
-
-/* Menu */
-.rattachement-menu {
-    display: none;
+  // filet lumineux supérieur
+  &::before {
+    content: '';
     position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    min-width: 290px;
-    background: #ffffff;
-    border: 1px solid #dfe3e8;
-    border-radius: 14px;
-    padding: 10px;
-    z-index: 9999;
-    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+    inset: 0 12px auto;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(255, 255, 255, .10) 40%,
+      rgba(255, 255, 255, .10) 60%,
+      transparent
+    );
+  }
 }
 
-.rattachement-menu-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 8px;
-    padding: 4px 6px;
+// ── Séparateur ───────────────────────────────────────────────────
+.ratt-sep {
+  width: 1px;
+  height: 18px;
+  background: $c-border-lo;
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 
-.rattachement-menu-item {
-    border-radius: 10px;
-    padding: 10px 12px;
+// ── Cellule générique ─────────────────────────────────────────────
+.ratt-cell {
+  @include flex-col;
+  justify-content: center;
+  padding: 0 9px;
+  gap: 2px;
+
+  &__label { @include micro-label; }
+
+  &__val {
+    font-size: 12px;
     font-weight: 500;
-    color: #0f172a;
+    color: $c-text-1;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
 }
 
-.rattachement-menu-item:hover {
-    background: #f1f5f9;
+// ── Poste ─────────────────────────────────────────────────────────
+.ratt-cell--poste {
+  min-width: 48px;
+
+  .ratt-cell__val {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -.3px;
+  }
 }
 
-.rattachement-sublist {
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px solid #e2e8f0;
+// ── Ticket actif ──────────────────────────────────────────────────
+.ratt-cell--ticket {
+  min-width: 90px;
+
+  .ratt-cell__val {
+    font-size: 13px;
+    font-weight: 500;
+    color: $c-indigo-hi;
+    @include ease;
+  }
+
+  &.is-changed .ratt-cell__val {
+    animation: ratt-ticket-flash .8s ease forwards;
+  }
 }
 
-.rattachement-poste-item,
-.rattachement-queue-item,
-.rattachement-service-item {
-    border-radius: 10px !important;
-    margin-bottom: 4px;
+// ── Statut ────────────────────────────────────────────────────────
+.ratt-cell--status {
+  min-width: 138px;
+  gap: 3px;
+}
+
+.ratt-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ratt-cell__queue {
+  font-size: 10px;
+  font-weight: 400;
+  color: $c-text-2;
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ── Badge mode ────────────────────────────────────────────────────
+.ratt-badge {
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 20px;
+  border: .5px solid $c-border-lo;
+  background: transparent;
+  color: $c-text-3;
+  white-space: nowrap;
+  line-height: 1.4;
+  @include ease;
+
+  &--manuel      { background: rgba($c-indigo, .12);  color: $c-indigo-hi;  border-color: rgba($c-indigo, .28); }
+  &--auto        { background: rgba($c-emerald, .10); color: $c-emerald-hi; border-color: rgba($c-emerald, .22); }
+  &--prioritaire { background: rgba($c-amber, .12);   color: $c-amber;      border-color: rgba($c-amber, .24); }
+  &--aucun       { background: transparent; }
+}
+
+// ── Actions ───────────────────────────────────────────────────────
+.ratt-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.ratt-btn {
+  @include flex-center;
+  gap: 5px;
+  height: $h-btn;
+  padding: 0 10px;
+  border-radius: $r-btn;
+  border: .5px solid $c-border-lo;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  @include ease;
+  white-space: nowrap;
+  line-height: 1;
+
+  svg { width: 11px; height: 11px; flex-shrink: 0; }
+
+  &:active { transform: scale(.97); }
+
+  // Config
+  &--config {
+    background: rgba(255, 255, 255, .04);
+    color: $c-text-2;
+    border-color: $c-border-lo;
+
+    &:hover {
+      background: rgba(255, 255, 255, .07);
+      color: $c-text-1;
+      border-color: $c-border-md;
+    }
+  }
+
+  // Suivant
+  &--next {
+    background: $c-indigo;
+    color: #fff;
+    border-color: rgba($c-indigo-hi, .35);
+
+    &:hover {
+      background: lighten($c-indigo, 6%);
+    }
+  }
+
+  // Terminer
+  &--done {
+    background: rgba($c-emerald, .10);
+    color: $c-emerald-hi;
+    border-color: rgba($c-emerald, .22);
+
+    &:hover {
+      background: $c-emerald;
+      color: #fff;
+      border-color: $c-emerald;
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  MENU DROPDOWN
+// ══════════════════════════════════════════════════════════════════
+.ratt-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 340px;
+  background: $c-surface-1;
+  border-radius: $r-menu;
+  overflow: hidden;
+  border: .5px solid $c-border-md;
+  z-index: 9999;
+
+  &.is-open {
+    display: block;
+    animation: ratt-menu-in .18s cubic-bezier(.34, 1.2, .64, 1) both;
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────────
+.ratt-menu__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: .5px solid $c-border-lo;
+}
+
+.ratt-menu__title {
+  font-size: 12px;
+  font-weight: 500;
+  color: $c-text-1;
+  letter-spacing: -.1px;
+}
+
+.ratt-menu__close {
+  @include flex-center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: .5px solid $c-border-lo;
+  background: rgba(255, 255, 255, .04);
+  color: $c-text-2;
+  cursor: pointer;
+  @include ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, .08);
+    color: $c-text-1;
+  }
+}
+
+// ── Section files ─────────────────────────────────────────────────
+.ratt-live {
+  padding: 12px 14px;
+}
+
+.ratt-section-title {
+  @include micro-label;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  &::after {
+    content: '';
+    flex: 1;
+    height: .5px;
+    background: $c-border-lo;
+  }
+}
+
+.ratt-queues-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar       { width: 2px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: $c-border-md; border-radius: 2px; }
+}
+
+.ratt-queue-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 9px;
+  border-radius: $r-card;
+  background: rgba(255, 255, 255, .03);
+  border: .5px solid $c-border-lo;
+  cursor: pointer;
+  @include ease;
+
+  &:hover {
+    background: rgba($c-indigo, .08);
+    border-color: rgba($c-indigo, .28);
+  }
+
+  &__name {
+    font-size: 11.5px;
+    font-weight: 400;
+    color: $c-text-1;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+}
+
+// ── Pill compteur ─────────────────────────────────────────────────
+.ratt-pill {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 20px;
+  font-variant-numeric: tabular-nums;
+  min-width: 26px;
+  text-align: center;
+  border: .5px solid;
+
+  &--waiting { background: rgba($c-amber, .12);   color: $c-amber;      border-color: rgba($c-amber, .22); }
+  &--zero    { background: rgba($c-emerald, .10); color: $c-emerald-hi; border-color: rgba($c-emerald, .20); }
+
+  &.bump { animation: ratt-bump .3s ease; }
+}
+
+// ── Dot live ──────────────────────────────────────────────────────
+.ratt-dot-live {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $c-emerald;
+  animation: ratt-pulse 2s ease-in-out infinite;
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────
+.ratt-skeleton {
+  height: 34px;
+  border-radius: $r-card;
+  background: linear-gradient(90deg,
+    $c-surface-2 25%,
+    lighten($c-surface-2, 3%) 50%,
+    $c-surface-2 75%
+  );
+  background-size: 200% 100%;
+  animation: ratt-shimmer 1.4s infinite;
+}
+
+// ── Séparateur menu ───────────────────────────────────────────────
+.ratt-menu__sep {
+  height: .5px;
+  background: $c-border-lo;
+  margin: 0 14px;
+}
+
+// ── Grille modes ──────────────────────────────────────────────────
+.ratt-modes {
+  padding: 12px 14px;
+}
+
+.ratt-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+
+.ratt-mode-btn {
+  @include flex-col;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px;
+  border-radius: 8px;
+  border: .5px solid $c-border-lo;
+  background: rgba(255, 255, 255, .02);
+  cursor: pointer;
+  @include ease;
+  text-align: center;
+
+  &:hover {
+    border-color: rgba($c-indigo, .35);
+    background: rgba($c-indigo, .07);
+
+    .ratt-mode-icon {
+      background: $c-indigo;
+      color: #fff;
+      border-color: rgba($c-indigo-hi, .4);
+    }
+  }
+
+  &.is-active {
+    border-color: rgba($c-indigo, .4);
+    background: rgba($c-indigo, .08);
+
+    .ratt-mode-icon {
+      background: $c-indigo;
+      color: #fff;
+      border-color: rgba($c-indigo-hi, .4);
+    }
+
+    .ratt-mode-label { color: $c-indigo-hi; }
+  }
+}
+
+.ratt-mode-icon {
+  @include flex-center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, .04);
+  color: $c-text-2;
+  border: .5px solid $c-border-lo;
+  @include ease;
+
+  svg { width: 14px; height: 14px; }
+}
+
+.ratt-mode-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: $c-text-1;
+  line-height: 1;
+}
+
+.ratt-mode-desc {
+  font-size: 8.5px;
+  color: $c-text-3;
+  line-height: 1;
+}
+
+// ── Sublist ───────────────────────────────────────────────────────
+.ratt-sublist {
+  padding: 0 14px 14px;
+
+  &:empty { display: none; }
+}
+
+.ratt-sublist-title { @include micro-label; margin-bottom: 6px; margin-top: 2px; }
+
+.ratt-sublist-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 9px;
+  border-radius: $r-card;
+  border: .5px solid transparent;
+  background: none;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: $c-text-2;
+  cursor: pointer;
+  @include ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, .04);
+    border-color: $c-border-lo;
+    color: $c-text-1;
+  }
+}
+
+// ── Sélecteur de poste ────────────────────────────────────────────
+.ratt-poste-selector {
+  padding-bottom: 2px;
+
+  &__title { @include micro-label; margin-bottom: 6px; }
+
+  &__grid { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  &__sep { height: .5px; background: $c-border-lo; margin: 10px 0; }
+}
+
+.ratt-poste-btn {
+  @include flex-center;
+  width: 36px;
+  height: 24px;
+  border-radius: 5px;
+  border: .5px solid $c-border-lo;
+  background: rgba(255, 255, 255, .03);
+  font-size: 10.5px;
+  font-weight: 400;
+  color: $c-text-2;
+  cursor: pointer;
+  @include ease;
+
+  &:hover   { border-color: $c-border-md; color: $c-text-1; }
+
+  &.active {
+    background: $c-indigo;
+    border-color: rgba($c-indigo-hi, .4);
+    color: #fff;
+  }
+}
+// ── Section poste (en haut du menu) ─────────────────────────────
+.ratt-poste-section {
+  padding: 12px 14px;
+
+  .ratt-section-title { margin-bottom: 8px; }
+}
+
+#ratt-poste-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }

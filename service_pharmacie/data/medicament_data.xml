@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ═══════════════════════════════════════════════════════
+             Devise : Dinar Tunisien (TND)
+             On met à jour l'enregistrement natif Odoo (base.TND)
+             au lieu d'en créer un nouveau.
+        ════════════════════════════════════════════════════════ -->
+        <record id="base.TND" model="res.currency">
+            <field name="symbol">DT</field>
+            <field name="full_name">Dinar Tunisien</field>
+            <field name="decimal_places">3</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════════
+             Formes galéniques de référence
+        ════════════════════════════════════════════════════════ -->
+        <record id="fg_comprime" model="pharmacie.forme.galenique">
+            <field name="name">Comprimé</field>
+            <field name="code">CPR</field>
+        </record>
+        <record id="fg_gelule" model="pharmacie.forme.galenique">
+            <field name="name">Gélule</field>
+            <field name="code">GEL</field>
+        </record>
+        <record id="fg_sirop" model="pharmacie.forme.galenique">
+            <field name="name">Sirop</field>
+            <field name="code">SYR</field>
+        </record>
+        <record id="fg_suspension" model="pharmacie.forme.galenique">
+            <field name="name">Suspension Buvable</field>
+            <field name="code">SUB</field>
+        </record>
+        <record id="fg_injectable" model="pharmacie.forme.galenique">
+            <field name="name">Solution Injectable</field>
+            <field name="code">INJ</field>
+        </record>
+        <record id="fg_pommade" model="pharmacie.forme.galenique">
+            <field name="name">Pommade</field>
+            <field name="code">POM</field>
+        </record>
+        <record id="fg_creme" model="pharmacie.forme.galenique">
+            <field name="name">Crème</field>
+            <field name="code">CRM</field>
+        </record>
+        <record id="fg_ovule" model="pharmacie.forme.galenique">
+            <field name="name">Ovule</field>
+            <field name="code">OVU</field>
+        </record>
+        <record id="fg_suppositoire" model="pharmacie.forme.galenique">
+            <field name="name">Suppositoire</field>
+            <field name="code">SUP</field>
+        </record>
+        <record id="fg_collyre" model="pharmacie.forme.galenique">
+            <field name="name">Collyre</field>
+            <field name="code">COL</field>
+        </record>
+        <record id="fg_patch" model="pharmacie.forme.galenique">
+            <field name="name">Patch Transdermique</field>
+            <field name="code">PAT</field>
+        </record>
+        <record id="fg_sachet" model="pharmacie.forme.galenique">
+            <field name="name">Sachet</field>
+            <field name="code">SAC</field>
+        </record>
+        <record id="fg_spray" model="pharmacie.forme.galenique">
+            <field name="name">Spray / Aérosol</field>
+            <field name="code">SPR</field>
+        </record>
+        <record id="fg_gouttes" model="pharmacie.forme.galenique">
+            <field name="name">Gouttes</field>
+            <field name="code">GTT</field>
+        </record>
+
+    </data>
+</odoo>

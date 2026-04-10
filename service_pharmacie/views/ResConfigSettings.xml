@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_res_config_settings_service_pharmacie" model="ir.ui.view">
+        <field name="name">res.config.settings.service.pharmacie</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base_setup.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Pharmacie" name="service_pharmacie"
+                     icon="/service_pharmacie/static/description/icon.png">
+
+                    <!-- ══════════════════════════════════════════
+                         BLOC 1 — Interface publique ticket
+                    ══════════════════════════════════════════ -->
+                    <block title="Interface ticket physique" name="block_ticket">
+
+                        <setting string="Borne de prise de ticket"
+                                 help="Active une page web accessible en local (localhost) ou sur le réseau interne de la pharmacie. Aucune authentification requise — destinée à la borne physique en pharmacie.">
+                            <field name="ticket_public_enabled"/>
+                            <div class="text-muted mt-1" style="font-size:12px;">
+                                Accessible via
+                                <code>http://localhost:8069/pharmacy/ticket</code>
+                                ou l'adresse IP locale du serveur.
+                                Aucun compte utilisateur requis.
+                            </div>
+                        </setting>
+
+                        <setting string="Protection par mot de passe"
+                                 help="Si renseigné, un mot de passe sera demandé à l'ouverture de la borne."
+                                 invisible="not ticket_public_enabled">
+
+                            <field name="ticket_public_password"
+                                   password="True"
+                                   placeholder="Laisser vide = aucune protection"
+                                   style="max-width:280px;"
+                                   invisible="ticket_password_show"/>
+
+                            <field name="ticket_public_password"
+                                   placeholder="Laisser vide = aucune protection"
+                                   style="max-width:280px;"
+                                   invisible="not ticket_password_show"/>
+
+                            <div class="d-flex align-items-center gap-2 mt-2">
+                                <field name="ticket_password_show"
+                                       widget="boolean_toggle"
+                                       nolabel="1"/>
+                                <span class="text-muted" style="font-size:12px;">
+                                    Afficher le mot de passe
+                                </span>
+                            </div>
+
+                        </setting>
+
+                    </block>
+
+                    <!-- ══════════════════════════════════════════
+                         BLOC 2 — File d'attente
+                    ══════════════════════════════════════════ -->
+                    <block title="File d'attente" name="block_queue">
+
+                        <setting string="Mode de priorité"
+                                 help="Définit l'ordre de passage entre tickets virtuels (réservation en ligne) et tickets physiques (borne en pharmacie).">
+                            <field name="mode_priorite" widget="radio"/>
+                            <div class="text-muted mt-2" style="font-size:12px;">
+                                <i class="fa fa-info-circle me-1"/>
+                                <b>Virtuel en priorité</b> : les clients ayant réservé en ligne passent en premier.<br/>
+                                <b>Mix (FIFO)</b> : ordre d'arrivée pur, quel que soit le canal.
+                            </div>
+                        </setting>
+
+                    </block>
+
+                    <!-- ══════════════════════════════════════════
+                         BLOC 3 — Localisation
+                    ══════════════════════════════════════════ -->
+                    <block title="Localisation de la pharmacie" name="block_localization">
+
+                        <setting invisible="not localization_id">
+                            <div class="w-100">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="badge text-bg-success">
+                                        <i class="fa fa-check-circle me-1"/>Localisation configurée
+                                    </span>
+                                    <button type="action"
+                                            name="%(service_pharmacie.action_pharmacy_localization)d"
+                                            string="Modifier"
+                                            class="btn btn-outline-primary btn-sm"
+                                            icon="fa-pencil"/>
+                                </div>
+
+                                <div class="row g-2" style="font-size:13px;">
+
+                                    <div class="col-12 col-md-6">
+                                        <div class="border rounded p-2 h-100"
+                                             style="background:var(--bs-light)">
+                                            <div class="text-muted mb-1"
+                                                 style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">
+                                                <i class="fa fa-hospital-o me-1"/>Établissement
+                                            </div>
+                                            <div class="fw-bold">
+                                                <field name="localization_nom" readonly="1" nolabel="1"/>
+                                            </div>
+                                            <div class="text-muted mt-1">
+                                                <field name="localization_adresse" readonly="1" nolabel="1"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <div class="border rounded p-2 h-100"
+                                             style="background:var(--bs-light)">
+                                            <div class="text-muted mb-1"
+                                                 style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">
+                                                <i class="fa fa-map-marker me-1"/>Coordonnées GPS
+                                            </div>
+                                            <div>
+                                                <span class="text-muted">Lat :</span>
+                                                <field name="localization_lat" readonly="1" nolabel="1"/>
+                                            </div>
+                                            <div>
+                                                <span class="text-muted">Lon :</span>
+                                                <field name="localization_lon" readonly="1" nolabel="1"/>
+                                            </div>
+                                            <div class="mt-1">
+                                                <span class="text-muted">Rayon :</span>
+                                                <field name="localization_rayon" readonly="1" nolabel="1"/>
+                                                <span class="text-muted ms-1">m</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <div class="border rounded p-2 h-100"
+                                             style="background:var(--bs-light)">
+                                            <div class="text-muted mb-1"
+                                                 style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">
+                                                <i class="fa fa-calendar me-1"/>Réservations
+                                            </div>
+                                            <div class="fw-bold fs-5">
+                                                <field name="localization_nb_reservations" readonly="1" nolabel="1"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6">
+                                        <div class="border rounded p-2 h-100"
+                                             style="background:var(--bs-light)">
+                                            <div class="text-muted mb-1"
+                                                 style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">
+                                                <i class="fa fa-external-link me-1"/>Lien externe
+                                            </div>
+                                            <field name="localization_maps_url"
+                                                   widget="url"
+                                                   readonly="1"
+                                                   nolabel="1"
+                                                   text="Voir sur Google Maps"/>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </setting>
+
+                        <setting invisible="localization_id">
+                            <div class="alert alert-warning d-flex gap-3 align-items-start mb-0"
+                                 role="alert">
+                                <i class="fa fa-exclamation-triangle fa-2x text-warning mt-1"/>
+                                <div>
+                                    <div class="fw-bold mb-1">Aucune localisation configurée</div>
+                                    <div class="text-muted mb-2" style="font-size:12px;">
+                                        La localisation est nécessaire pour valider la présence
+                                        des clients via GPS lors de leur arrivée à la pharmacie.
+                                    </div>
+                                    <button type="action"
+                                            name="%(service_pharmacie.action_pharmacy_localization)d"
+                                            string="Configurer maintenant"
+                                            class="btn btn-warning btn-sm"
+                                            icon="fa-map-marker"/>
+                                </div>
+                            </div>
+                        </setting>
+
+                    </block>
+                     <block title="Estimation des files">
+                    <setting string="Mode d'estimation">
+                        <field name="mode_estimation"/>
+                    </setting>
+                    <setting string="Seuil minimum tickets service">
+                        <field name="service_min_records"/>
+                    </setting>
+                    <setting string="Seuil minimum tickets assistant">
+                        <field name="assistant_min_records"/>
+                    </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_service_pharmacie_settings" model="ir.actions.act_window">
+        <field name="name">Paramètres Pharmacie</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="context">{'module': 'service_pharmacie'}</field>
+    </record>
+</odoo>

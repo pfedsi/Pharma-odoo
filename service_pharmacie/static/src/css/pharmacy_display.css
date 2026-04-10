@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap');
-
 /* ═══════════════════════════════════
    VARIABLES
    ═══════════════════════════════════ */
@@ -168,8 +166,9 @@ body.pharmacy-display-body {
 /* ══ GRILLE ══ */
 .display-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
+    align-items: start;
 }
 
 /* ══ CARD ══ */
@@ -180,41 +179,94 @@ body.pharmacy-display-body {
     border: 1px solid var(--gray-200);
     box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     animation: card-in 0.3s cubic-bezier(0.16,1,0.3,1) both;
+    display: flex;
+    flex-direction: column;
+}
+.display-card.is-available {
+    border: 1.5px solid rgba(16, 185, 129, 0.3);
 }
 @keyframes card-in {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
+/* ══ CARD HEADER ══ */
 .card-header {
     background: var(--green-800);
     padding: 14px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
 }
 .queue-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 800;
     color: var(--white);
     letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .queue-badge {
     font-size: 8px;
     font-weight: 700;
     letter-spacing: 2px;
     text-transform: uppercase;
-    background: rgba(255,255,255,0.12);
-    color: rgba(255,255,255,0.65);
     padding: 3px 10px;
     border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.queue-badge--waiting {
+    background: rgba(255,255,255,0.14);
+    color: rgba(255,255,255,0.75);
+}
+.queue-badge--free {
+    background: rgba(16, 185, 129, 0.22);
+    color: #6ee7b7;
 }
 
+/* ══ STATS ROW ══ */
+.card-stats {
+    display: flex;
+    border-bottom: 1px solid var(--gray-100);
+}
+.stat-cell {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 4px;
+    background: var(--gray-50);
+}
+.stat-cell + .stat-cell {
+    border-left: 1px solid var(--gray-200);
+}
+.stat-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+}
+.stat-number--active { color: var(--green-600); }
+.stat-number--zero   { color: var(--gray-300); }
+.stat-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    margin-top: 4px;
+}
+
+/* ══ CARD BODY ══ */
 .card-body {
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    flex: 1;
 }
 
 /* ══ SECTION LABEL ══ */
@@ -223,8 +275,8 @@ body.pharmacy-display-body {
     font-weight: 700;
     letter-spacing: 4px;
     text-transform: uppercase;
-    color: var(--gray-400);
-    padding: 8px 4px 4px;
+    color: var(--gray-300);
+    padding: 4px 2px 6px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -233,70 +285,24 @@ body.pharmacy-display-body {
     content: '';
     flex: 1;
     height: 1px;
-    background: var(--gray-200);
-}
-
-/* ══ TICKET LINE — base ══ */
-.ticket-line {
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid var(--gray-200);
-}
-
-.tl-top {
-    padding: 14px 18px 16px;
     background: var(--gray-100);
 }
-.tl-bot {
-    padding: 10px 18px;
-    background: var(--gray-50);
-    border-top: 1px solid var(--gray-200);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
 
-.ticket-label {
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--gray-400);
-    margin-bottom: 4px;
+/* ══ TICKET APPELÉ ══ */
+.ticket-called {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--green-300);
+    box-shadow: 0 3px 12px rgba(5,150,105,0.12);
+    margin-bottom: 6px;
 }
-.ticket-value {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 34px;
-    font-weight: 700;
-    color: var(--gray-300);
-    line-height: 1;
-    letter-spacing: -1px;
-}
-.poste-label {
-    font-size: 8px;
-    font-weight: 700;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--gray-400);
-}
-.poste-value {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--gray-500);
-}
-
-/* ══ TICKET APPELÉ — vert actif ══ */
-.ticket-line.is-appele {
-    border-color: var(--green-300);
-    box-shadow: 0 4px 16px rgba(5,150,105,0.12);
-}
-.ticket-line.is-appele .tl-top {
+.ticket-called__top {
+    padding: 10px 14px 12px;
     background: var(--green-600);
     position: relative;
     overflow: hidden;
 }
-.ticket-line.is-appele .tl-top::after {
+.ticket-called__top::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -311,69 +317,72 @@ body.pharmacy-display-body {
     60%  { transform: translateX(200%); }
     100% { transform: translateX(200%); }
 }
-.ticket-line.is-appele .ticket-label { color: rgba(255,255,255,0.6); }
-.ticket-line.is-appele .ticket-value {
-    font-size: 46px;
-    color: var(--white);
-}
-.ticket-line.is-appele .tl-bot {
-    background: var(--green-50);
-    border-top-color: var(--green-100);
-}
-.ticket-line.is-appele .poste-label { color: var(--green-600); }
-.ticket-line.is-appele .poste-value { color: var(--green-800); font-size: 20px; }
-
-/* Badge "En cours" sur les appelés */
-.ticket-line.is-appele .ticket-label::after {
-    content: ' · EN COURS';
-    color: rgba(255,255,255,0.4);
-}
-
-/* ══ TICKET EN ATTENTE ══ */
-.ticket-line.is-waiting {
-    border-color: var(--gray-200);
-}
-.ticket-line.is-waiting .tl-top {
-    background: var(--gray-50);
-}
-.ticket-line.is-waiting .ticket-label { color: var(--gray-400); }
-.ticket-line.is-waiting .ticket-value {
-    font-size: 28px;
-    color: var(--gray-400);
-}
-.ticket-line.is-waiting .tl-bot {
-    background: var(--white);
-    border-top-color: var(--gray-100);
-}
-.ticket-line.is-waiting .poste-label { color: var(--gray-300); }
-.ticket-line.is-waiting .poste-value {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gray-400);
-    font-family: 'Inter', sans-serif;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-
-/* ══ EMPTY ══ */
-.no-ticket {
-    padding: 20px 16px;
-    text-align: center;
-    font-size: 9px;
+.ticket-called__label {
+    font-size: 7px;
     font-weight: 700;
     letter-spacing: 3px;
     text-transform: uppercase;
-    color: var(--gray-300);
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 2px;
 }
-.empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 80px 24px;
+.ticket-called__number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1;
+    letter-spacing: -1px;
+}
+.ticket-called__bottom {
+    padding: 8px 14px;
+    background: var(--green-50);
+    border-top: 1px solid var(--green-100);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.poste-label {
+    font-size: 7px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--green-600);
+    margin-bottom: 2px;
+}
+.poste-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--green-800);
+}
+
+/* ══ ÉTAT DISPONIBLE ══ */
+.available-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 28px 16px;
+    flex: 1;
+}
+.available-state__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green-500);
+    animation: pulse-green 2s ease-in-out infinite;
+}
+@keyframes pulse-green {
+    0%, 100% { opacity: 1;   transform: scale(1);    box-shadow: 0 0 0 0   rgba(16,185,129,0.5); }
+    50%       { opacity: .85; transform: scale(1.15); box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+}
+.available-state__label {
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: .05em;
     text-transform: uppercase;
-    color: var(--gray-400);
+    color: var(--green-500);
 }
 
 /* ══ FOOTER ══ */
@@ -422,29 +431,20 @@ body.pharmacy-display-body {
 /* ═══════════════════════════════════
    POPUP
    ═══════════════════════════════════ */
-/* ══ POPUP ══ */
 .ticket-popup {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 99999;                          /* plus haut que le menu Odoo */
+    z-index: 99999;
     background: rgba(6,78,59,0.82);
     backdrop-filter: blur(16px) saturate(0.8);
     -webkit-backdrop-filter: blur(16px) saturate(0.8);
 }
-.ticket-popup.hidden {
-    display: none;
-}
-
-/* Animation overlay */
-.ticket-popup:not(.hidden) {
-    animation: overlay-in 0.3s ease both;
-}
+.ticket-popup.hidden { display: none; }
+.ticket-popup:not(.hidden) { animation: overlay-in 0.3s ease both; }
 @keyframes overlay-in {
     from { opacity: 0; }
     to   { opacity: 1; }
@@ -476,17 +476,14 @@ body.pharmacy-display-body {
     gap: 12px;
 }
 .popup-cross {
-    width: 20px;
-    height: 20px;
+    width: 20px; height: 20px;
     background: var(--green-600);
     border-radius: 6px;
     position: relative;
 }
 .popup-cross::before, .popup-cross::after {
-    content: '';
-    position: absolute;
-    background: var(--white);
-    border-radius: 1px;
+    content: ''; position: absolute;
+    background: var(--white); border-radius: 1px;
 }
 .popup-cross::before { width: 5px; height: 14px; top: 3px; left: 7px; }
 .popup-cross::after  { width: 14px; height: 5px; top: 7px; left: 3px; }
@@ -518,7 +515,7 @@ body.pharmacy-display-body {
     letter-spacing: 4px;
     text-transform: uppercase;
 }
-.popup-cell.green-cell .popup-cell-label { color: rgba(255,255,255,0.55); }
+.popup-cell.green-cell .popup-cell-label  { color: rgba(255,255,255,0.55); }
 .popup-cell:not(.green-cell) .popup-cell-label { color: var(--green-600); }
 
 #popup-ticket-number {
@@ -552,7 +549,5 @@ body.pharmacy-display-body {
 .popup-progress-bar {
     height: 100%;
     background: linear-gradient(90deg, var(--green-500), var(--green-700));
-    transform-origin: left;
-    animation: drain 4s linear forwards;
+    width: 100%;
 }
-@keyframes drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }

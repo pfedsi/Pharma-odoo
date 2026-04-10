@@ -10,11 +10,10 @@
                     <link rel="preconnect" href="https://fonts.googleapis.com"/>
                     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
                     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@500;700&amp;display=swap"/>
-                    <link rel="stylesheet" href="/service_pharmacie/static/src/css/pharmacy_display.css?v=6"/>
-                    <script type="text/javascript" src="/web/static/lib/jquery/jquery.js"></script>
-                    <script type="text/javascript" src="/service_pharmacie/static/src/js/pharmacy_display_v1.js?v=4"></script>
+                    <link rel="stylesheet" href="/service_pharmacie/static/src/css/pharmacy_display.css?v=7"/>
+                    <script type="text/javascript" src="/service_pharmacie/static/src/js/pharmacy_display_v1.js?v=5"></script>
                 </head>
-                    <body class="pharmacy-display-body" style="position: relative; isolation: isolate;">
+                <body class="pharmacy-display-body">
 
                     <div class="display-wrapper">
 

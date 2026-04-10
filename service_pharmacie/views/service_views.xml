@@ -2,9 +2,7 @@
 <odoo>
     <data>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             LISTE — Services
-             ═══════════════════════════════════════════════════════════════════ -->
+        <!-- LISTE -->
         <record id="view_pharmacy_service_list" model="ir.ui.view">
             <field name="name">pharmacy.service.list</field>
             <field name="model">pharmacy.service</field>
@@ -13,19 +11,21 @@
                       decoration-muted="active == False"
                       decoration-info="overnight == True">
                     <field name="nom"/>
+                    <field name="type_affichage"          string="Type"/>
                     <field name="dure_estimee_par_defaut" string="Durée (min)"/>
                     <field name="heure_ouverture"         string="Ouverture"  widget="float_time"/>
                     <field name="heure_fermeture"         string="Fermeture"  widget="float_time"/>
                     <field name="overnight"               string="Nuit"       widget="boolean_toggle"/>
                     <field name="duree_creneau"           string="Intervalle (min)"/>
                     <field name="active"                  widget="boolean_toggle"/>
+                    <field name="warning_estimation"      invisible="1"/>
+                    <field name="moyenne_reelle_observee" readonly="1"/>
+                    <field name="warning_estimation_message"/>
                 </list>
             </field>
         </record>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             FORMULAIRE — Service
-             ═══════════════════════════════════════════════════════════════════ -->
+        <!-- FORMULAIRE -->
         <record id="view_pharmacy_service_form" model="ir.ui.view">
             <field name="name">pharmacy.service.form</field>
             <field name="model">pharmacy.service</field>
@@ -44,6 +44,8 @@
                             <group string="Général">
                                 <field name="dure_estimee_par_defaut"
                                        string="Durée estimée / client (min)"/>
+                                <field name="type_affichage"
+                                       string="Type d'affichage"/>
                                 <field name="active"
                                        string="Service actif"
                                        widget="boolean_toggle"/>
@@ -51,14 +53,17 @@
                             <group string="Horaires par défaut">
                                 <field name="heure_ouverture"
                                        string="De"
-                                       widget="float_time"
-                                       help="Heure d'ouverture. Ex : 22.0 pour 22h00 (pharmacie de nuit)."/>
+                                       widget="float_time"/>
                                 <field name="heure_fermeture"
                                        string="À"
-                                       widget="float_time"
-                                       help="Si inférieure à l'ouverture, l'horaire traverse minuit automatiquement."/>
+                                       widget="float_time"/>
                                 <field name="duree_creneau"
                                        string="Intervalle entre réservations (min)"/>
+                                <field name="warning_estimation" invisible="1"/>
+                                <div class="alert alert-warning"
+                                     invisible="not warning_estimation">
+                                    <field name="warning_estimation_message" readonly="1"/>
+                                </div>
                                 <field name="overnight"
                                        string="Pharmacie de nuit"
                                        readonly="1"/>
@@ -85,7 +90,6 @@
                         </group>
 
                         <notebook>
-
                             <page string="Horaires par jour" name="horaires">
                                 <p>
                                     <i class="fa fa-info-circle text-info me-1"/>
@@ -113,7 +117,6 @@
                                     <field name="queue_id" string="File d'attente" readonly="1"/>
                                 </group>
                             </page>
-
                         </notebook>
 
                     </sheet>
@@ -121,9 +124,7 @@
             </field>
         </record>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             RECHERCHE
-             ═══════════════════════════════════════════════════════════════════ -->
+        <!-- RECHERCHE -->
         <record id="view_pharmacy_service_search" model="ir.ui.view">
             <field name="name">pharmacy.service.search</field>
             <field name="model">pharmacy.service</field>
@@ -145,20 +146,31 @@
                             name="filter_overnight"
                             domain="[('overnight','=',True)]"/>
                     <separator/>
+                    <filter string="Physique"
+                            name="filter_physique"
+                            domain="[('type_affichage','=','physique')]"/>
+                    <filter string="Virtuel"
+                            name="filter_virtuel"
+                            domain="[('type_affichage','=','virtuel')]"/>
+                    <filter string="Les deux"
+                            name="filter_les_deux"
+                            domain="[('type_affichage','=','les_deux')]"/>
+                    <separator/>
                     <filter string="Grouper par statut"
                             name="group_active"
                             context="{'group_by': 'active'}"/>
                     <filter string="Grouper par nuit/jour"
                             name="group_overnight"
                             context="{'group_by': 'overnight'}"/>
+                    <filter string="Grouper par type"
+                            name="group_type_affichage"
+                            context="{'group_by': 'type_affichage'}"/>
 
                 </search>
             </field>
         </record>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             ACTION
-             ═══════════════════════════════════════════════════════════════════ -->
+        <!-- ACTION -->
         <record id="action_pharmacy_service" model="ir.actions.act_window">
             <field name="name">Services</field>
             <field name="res_model">pharmacy.service</field>

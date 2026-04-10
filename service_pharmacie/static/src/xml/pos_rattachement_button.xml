@@ -4,80 +4,150 @@
     <t t-inherit="point_of_sale.Navbar" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[hasclass('pos-rightheader')]" position="before">
 
-            <div class="rattachement-wrapper position-relative me-3">
+            <div class="ratt-wrapper me-3">
 
-                <div class="rattachement-bar">
+                <!-- BARRE PRINCIPALE -->
+                <div class="ratt-bar">
 
-    <div class="rattachement-chip rattachement-poste-box">
-        <span class="rattachement-chip-label">Poste</span>
-        <span id="rattachement-poste-label" class="rattachement-chip-value">2</span>
-    </div>
+                    <div class="ratt-cell ratt-cell--poste">
+                        <span class="ratt-cell__label">Poste</span>
+                        <span id="rattachement-poste-label" class="ratt-cell__val">1</span>
+                    </div>
 
-    <button class="btn rattachement-btn rattachement-btn-light"
-            type="button"
-            onclick="window.dispatchEvent(new CustomEvent('toggle-rattachement-menu'))">
-        <i class="fa fa-link"/>
-        <span>Rattachement</span>
-    </button>
+                    <div class="ratt-sep"/>
 
-    <div class="rattachement-ticket-box">
-        <div class="rattachement-ticket-label">Ticket en cours</div>
-        <div id="current-ticket-label" class="rattachement-ticket-value">cnam-009</div>
-    </div>
+                    <div class="ratt-cell ratt-cell--ticket" id="ratt-ticket-cell">
+                        <span class="ratt-cell__label">Ticket actif</span>
+                        <span id="current-ticket-label" class="ratt-cell__val">—</span>
+                    </div>
 
-    <button class="btn rattachement-btn rattachement-btn-primary"
-            type="button"
-            onclick="window.dispatchEvent(new CustomEvent('call-next-ticket'))">
-        <i class="fa fa-arrow-right"/>
-        <span>Suivant</span>
-    </button>
+                    <div class="ratt-sep"/>
 
-    <button class="btn rattachement-btn rattachement-btn-success"
-            type="button"
-            onclick="window.dispatchEvent(new CustomEvent('finish-current-ticket'))">
-        <i class="fa fa-check"/>
-        <span>Terminer</span>
-    </button>
+                    <div class="ratt-cell ratt-cell--status">
+                        <div class="ratt-status-row">
+                            <span class="ratt-cell__label">Mode</span>
+                            <span id="rattachement-mode-label" class="ratt-badge ratt-badge--aucun">Aucun</span>
+                        </div>
+                        <div class="ratt-status-row">
+                            <span class="ratt-cell__label">File</span>
+                            <span id="rattachement-queue-label" class="ratt-cell__queue">—</span>
+                        </div>
+                    </div>
 
-    <div id="rattachement-status" class="rattachement-status-box">
-        <div class="rattachement-status-line">
-            <span class="rattachement-status-label">Mode</span>
-            <span id="rattachement-mode-label" class="rattachement-status-value">Manuel</span>
-        </div>
-        <div class="rattachement-status-line">
-            <span class="rattachement-status-label">Fichier</span>
-            <span id="rattachement-queue-label" class="rattachement-status-value">cnam</span>
-        </div>
-    </div>
+                    <div class="ratt-sep"/>
 
-</div>
+                    <div class="ratt-actions">
+                        <button class="ratt-btn ratt-btn--config" type="button"
+                                onclick="window.dispatchEvent(new CustomEvent('toggle-rattachement-menu'))">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 5a3 3 0 100 6A3 3 0 008 5z" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3.05 3.05l1.06 1.06M11.89 11.89l1.06 1.06M3.05 12.95l1.06-1.06M11.89 4.11l1.06-1.06" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                            <span>Rattachement</span>
+                        </button>
 
-                <!-- Menu dropdown -->
-                <div id="rattachement-menu" class="rattachement-menu shadow">
-                    <div class="rattachement-menu-title">Choisir un mode</div>
+                        <button class="ratt-btn ratt-btn--next" type="button"
+                                onclick="window.dispatchEvent(new CustomEvent('call-next-ticket'))">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Suivant</span>
+                        </button>
 
-                    <button class="dropdown-item rattachement-menu-item"
-                            type="button"
-                            onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'manuel'}}))">
-                        <i class="fa fa-hand-pointer-o me-2"/>
-                        Manuel
-                    </button>
+                        <button class="ratt-btn ratt-btn--done" type="button"
+                                onclick="window.dispatchEvent(new CustomEvent('finish-current-ticket'))">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                                <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span>Terminer</span>
+                        </button>
+                    </div>
 
-                    <button class="dropdown-item rattachement-menu-item"
-                            type="button"
-                            onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'auto_attente'}}))">
-                        <i class="fa fa-clock-o me-2"/>
-                        Automatique (attente)
-                    </button>
+                </div>
 
-                    <button class="dropdown-item rattachement-menu-item"
-                            type="button"
-                            onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'prioritaire'}}))">
-                        <i class="fa fa-star me-2"/>
-                        Prioritaire
-                    </button>
+                <!-- MENU DROPDOWN -->
+                <div id="rattachement-menu" class="ratt-menu">
 
-                    <div id="rattachement-sublist" class="rattachement-sublist"></div>
+                    <div class="ratt-menu__header">
+                        <span class="ratt-menu__title">Configuration rattachement</span>
+                        <button class="ratt-menu__close" type="button"
+                                onclick="window.dispatchEvent(new CustomEvent('toggle-rattachement-menu'))">
+                            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- ① SÉLECTEUR DE POSTE -->
+                    <div class="ratt-poste-section">
+                        <div class="ratt-section-title">Poste de travail</div>
+                        <div class="ratt-poste-selector__grid" id="ratt-poste-grid">
+                            <!-- injecté par JS -->
+                        </div>
+                    </div>
+
+                    <div class="ratt-menu__sep"/>
+
+                    <!-- ② CHOISIR UN MODE -->
+                    <div class="ratt-modes">
+                        <div class="ratt-section-title">Choisir un mode</div>
+                        <div class="ratt-mode-grid">
+
+                            <button class="ratt-mode-btn" type="button"
+                                    data-mode="manuel"
+                                    onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'manuel'}}))">
+                                <span class="ratt-mode-icon">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                        <path d="M10 2a8 8 0 100 16A8 8 0 0010 2z" stroke="currentColor" stroke-width="1.4"/>
+                                        <path d="M10 6v5l3 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                                    </svg>
+                                </span>
+                                <span class="ratt-mode-label">Manuel</span>
+                                <span class="ratt-mode-desc">Choisir une file</span>
+                            </button>
+
+                            <button class="ratt-mode-btn" type="button"
+                                    data-mode="auto_attente"
+                                    onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'auto_attente'}}))">
+                                <span class="ratt-mode-icon">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                        <path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
+                                <span class="ratt-mode-label">Automatique</span>
+                                <span class="ratt-mode-desc">File d'attente</span>
+                            </button>
+
+                            <button class="ratt-mode-btn" type="button"
+                                    data-mode="prioritaire"
+                                    onclick="window.dispatchEvent(new CustomEvent('select-rattachement-mode', {detail: {mode: 'prioritaire'}}))">
+                                <span class="ratt-mode-icon">
+                                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                                        <path d="M10 2l2.4 4.9 5.4.8-3.9 3.8.9 5.3L10 14.4l-4.8 2.5.9-5.3L2.2 7.7l5.4-.8z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+                                    </svg>
+                                </span>
+                                <span class="ratt-mode-label">Prioritaire</span>
+                                <span class="ratt-mode-desc">Par service</span>
+                            </button>
+
+                        </div>
+                    </div>
+
+                    <div class="ratt-menu__sep"/>
+
+                    <!-- ③ FILES ACTIVES -->
+                    <div class="ratt-live">
+                        <div class="ratt-section-title">Files actives</div>
+                        <div class="ratt-queues-grid" id="ratt-queues-grid">
+                            <div class="ratt-skeleton"/>
+                            <div class="ratt-skeleton"/>
+                            <div class="ratt-skeleton"/>
+                        </div>
+                    </div>
+
+                    <!-- ④ SUBLIST (files / services après sélection mode) -->
+                    <div id="rattachement-sublist" class="ratt-sublist"/>
+
                 </div>
 
             </div>

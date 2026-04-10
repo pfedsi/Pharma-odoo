@@ -26,7 +26,6 @@ class RattachementController(http.Controller):
         svc = RattachementService(request.env)
         return ok(svc.appeler_prochain(rattachement_id))
 
-
     @http.route("/pos/rattachement/current", type="jsonrpc", auth="user")
     def get_current_rattachement(self):
         return request.env["pharmacy.rattachement"].pos_get_my_rattachement()
@@ -42,13 +41,19 @@ class RattachementController(http.Controller):
         return [{"id": s.id, "name": s.nom} for s in services]
 
     @http.route("/pos/rattachement/set", type="jsonrpc", auth="user")
-    def set_rattachement(self, mode_rattachement, file_id=False, service_prioritaire_id=False, poste_number=False):
+    def set_rattachement(
+        self,
+        mode_rattachement,
+        file_id=False,
+        service_prioritaire_id=False,
+        poste_number=False,
+    ):
         return request.env["pharmacy.rattachement"].pos_set_my_rattachement(
-        mode_rattachement=mode_rattachement,
-        file_id=file_id,
-        service_prioritaire_id=service_prioritaire_id,
-        poste_number=poste_number,
-    )
+            mode_rattachement=mode_rattachement,
+            file_id=file_id,
+            service_prioritaire_id=service_prioritaire_id,
+            poste_number=poste_number,
+        )
 
     @http.route("/pos/rattachement/call_next", type="jsonrpc", auth="user")
     def call_next_ticket(self):

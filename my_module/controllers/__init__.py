@@ -1,1 +1,1 @@
-from . import controllers
+from . import ocr_controller

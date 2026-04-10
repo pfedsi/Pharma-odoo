@@ -4,3 +4,8 @@ from . import queue
 from . import ticket
 from . import reservation
 from . import rattachement
+from . import ResConfigSettings
+from . import PharmacyQueueHistory
+from . import product_template
+from . import inventaire_pharmacie
+from . import rf_predictor

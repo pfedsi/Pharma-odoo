@@ -139,7 +139,6 @@ class PharmacyReservation(models.Model):
         fenetre_fin_utc   = self.date_heure_reservation + delta
 
         if not (fenetre_debut_utc <= now_utc <= fenetre_fin_utc):
-            # ✅ On renvoie les heures en LOCAL pour l'affichage côté client
             fenetre_debut_local = _utc_to_local(fenetre_debut_utc, self.env)
             fenetre_fin_local   = _utc_to_local(fenetre_fin_utc,   self.env)
             return {
@@ -156,7 +155,6 @@ class PharmacyReservation(models.Model):
                 "fenetre_fin":   fenetre_fin_local.strftime("%Y-%m-%dT%H:%M:%S"),
             }
 
-        # ── Validation GPS ────────────────────────────────────────────────────
         if self.localisation_id:
             rayon     = self.localisation_id.rayon_validation
             pharm_lat = self.localisation_id.pharmacie_lat

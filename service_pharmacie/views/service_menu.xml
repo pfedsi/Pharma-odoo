@@ -1,55 +1,124 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-<record id="action_pharmacy_display_screen" model="ir.actions.act_url">
-    <field name="name">Affichage écran</field>
-    <field name="type">ir.actions.act_url</field>
-    <field name="url">/pharmacy/display</field>
-    <field name="target">new</field>
-</record>
-    <!-- Menu racine -->
+
+    <!-- ══════════════════════════════════════════
+         ACTIONS URL
+    ══════════════════════════════════════════ -->
+    <record id="action_pharmacy_display_screen" model="ir.actions.act_url">
+        <field name="name">Écran d'affichage</field>
+        <field name="url">/pharmacy/display</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="action_ticket_display_screen" model="ir.actions.act_url">
+        <field name="name">Borne de création ticket</field>
+        <field name="url">/pharmacy/ticket/access</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════
+         MENU RACINE
+    ══════════════════════════════════════════ -->
     <menuitem id="menu_pharmacy_root"
-              name="Espace Pharmacien"
+              name="Pharmacie"
+              sequence="10"
+              web_icon="service_pharmacie,static/description/icon.png"/>
+<!-- ══════════════════════════════════════════
+         MÉDICAMENTS — Catalogue & Inventaire
+    ══════════════════════════════════════════ -->
+    <menuitem id="menu_pharmacy_medicaments"
+              name="Médicaments"
+              parent="menu_pharmacy_root"
+              sequence="1"/>
+
+    <menuitem id="menu_medicaments"
+              name="Gestion de Médicaments"
+              parent="menu_pharmacy_medicaments"
+              action="action_medicaments_pharmacie"
               sequence="10"/>
 
-    <!-- Tout regrouper -->
-    <menuitem id="menu_pharmacy_management"
-              name="Gestion"
+    <!-- ══════════════════════════════════════════
+         ACTIVITÉ — Gestion quotidienne
+    ══════════════════════════════════════════ -->
+    <menuitem id="menu_pharmacy_activity"
+              name="Activité"
               parent="menu_pharmacy_root"
               sequence="10"/>
 
     <menuitem id="menu_pharmacy_reservations"
               name="Réservations"
-              parent="menu_pharmacy_management"
+              parent="menu_pharmacy_activity"
               action="action_pharmacy_reservation"
               sequence="10"/>
 
+    <menuitem id="menu_pharmacy_ticket"
+              name="Tickets"
+              parent="menu_pharmacy_activity"
+              action="action_pharmacy_ticket"
+              sequence="20"/>
+
+    
+
+    <!-- ══════════════════════════════════════════
+         RÉFÉRENTIEL — Données de base
+    ══════════════════════════════════════════ -->
+    <menuitem id="menu_pharmacy_referentiel"
+              name="Référentiel"
+              parent="menu_pharmacy_root"
+              sequence="20"/>
+
     <menuitem id="menu_pharmacy_service"
               name="Services"
-              parent="menu_pharmacy_management"
+              parent="menu_pharmacy_referentiel"
               action="action_pharmacy_service"
-              sequence="20"/>
+              sequence="10"/>
 
     <menuitem id="menu_pharmacy_rattachement"
               name="Rattachements"
-              parent="menu_pharmacy_management"
+              parent="menu_pharmacy_referentiel"
               action="action_pharmacy_rattachement"
               sequence="30"/>
 
-    <menuitem id="menu_pharmacy_ticket"
-              name="Tickets"
-              parent="menu_pharmacy_management"
-              action="action_pharmacy_ticket"
+    <menuitem id="menu_pharmacy_queue_history"
+              name="Historique rattachements"
+              parent="menu_pharmacy_referentiel"
+              action="action_pharmacy_queue_history"
               sequence="40"/>
 
-    <menuitem id="menu_pharmacy_localization"
-              name="Localisation"
-              parent="menu_pharmacy_management"
-              action="action_pharmacy_localization"
-              sequence="50"/>
-     <menuitem id="menu_pharmacy_display"
-                  name="Affichage écran"
-                  parent="menu_pharmacy_management"
-                  action="action_pharmacy_display_screen"
-                  sequence="60"/>
+    <!-- ══════════════════════════════════════════
+         BORNES — Accès interfaces publiques
+    ══════════════════════════════════════════ -->
+    <menuitem id="menu_pharmacy_bornes"
+              name="Bornes et écrans"
+              parent="menu_pharmacy_root"
+              sequence="30"/>
+
+    <menuitem id="menu_pharmacy_display"
+              name="Écran d'affichage file"
+              parent="menu_pharmacy_bornes"
+              action="action_pharmacy_display_screen"
+              sequence="10"/>
+
+    <menuitem id="menu_pharmacy_ticket_display"
+              name="Borne ticket physique"
+              parent="menu_pharmacy_bornes"
+              action="action_ticket_display_screen"
+              sequence="20"/>
+
+    <!-- ══════════════════════════════════════════
+         CONFIGURATION
+    ══════════════════════════════════════════ -->
+    <menuitem id="menu_pharmacy_configuration"
+              name="Configuration"
+              parent="menu_pharmacy_root"
+              sequence="99"/>
+
+    <menuitem id="menu_service_pharmacie_settings"
+              name="Paramètres"
+              parent="menu_pharmacy_configuration"
+              action="action_service_pharmacie_settings"
+              sequence="10"/>
+
+    
 
 </odoo>

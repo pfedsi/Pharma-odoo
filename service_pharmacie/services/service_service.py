@@ -38,15 +38,12 @@ class ServiceService:
     # ─────────────────────────────────────────
     # API publique
     # ─────────────────────────────────────────
-
-    def list_active(self) -> list:
-        services = self.env["pharmacy.service"].sudo().search([("active", "=", True)])
-        result = []
-        for s in services:
-            if not s.queue_id:
-                s._ensure_queue()
-            result.append(self._to_dict(s))
-        return result
+    def list_active(self, type_affichage: str | None = None):
+        domain = [("active", "=", True)]
+        if type_affichage in ("physique", "virtuel"):
+            domain += [("type_affichage", "in", [type_affichage, "les_deux"])]
+        services = self.env["pharmacy.service"].search(domain)
+        return [self._to_dict(s) for s in services]
 
     def get_by_id(self, service_id: int) -> dict:
         service = self.env["pharmacy.service"].sudo().browse(service_id)
@@ -163,6 +160,9 @@ class ServiceService:
             "heure_fermeture": _fmt_time(s.heure_fermeture),
             "overnight": overnight,
             "duree_creneau": s.duree_creneau or 0,
+
+            # Type d'affichage
+            "type_affichage": s.type_affichage or "physique",
 
             # GPS optionnel
             "pharmacie_adresse": getattr(s, "pharmacie_adresse", "") or "",

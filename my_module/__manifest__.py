@@ -1,35 +1,32 @@
+
+# -*- coding: utf-8 -*-
 {
-    'name': "my_module",
-
-    'summary': "Short (1 phrase/line) summary of the module's purpose",
-
+    'name': 'Q-Pharma OCR Ordonnance',
+    'version': '19.0.1.0.0',
+    'category': 'Healthcare',
+    'summary': 'Fournit la clé OpenAI à l\'app mobile pour OCR des ordonnances',
     'description': """
-Long description of module's purpose
+Q-Pharma TN — OCR Ordonnance
+==============================
+Architecture :
+  1. App mobile appelle GET /qpharma/ocr/apikey  → récupère la clé OpenAI
+  2. App mobile appelle directement OpenAI GPT-4o Vision
+  3. App mobile affiche les médicaments extraits
+
+Endpoints exposés :
+  GET  /qpharma/ocr/apikey   → retourne la clé OpenAI (token mobile requis)
+  GET  /qpharma/ocr/ping     → health-check public
     """,
-
-    'author': "My Company",
-    'website': "https://www.yourcompany.com",
-
-    # Categories can be used to filter modules in modules listing
-    # Check https://github.com/odoo/odoo/blob/15.0/odoo/addons/base/data/ir_module_category_data.xml
-    # for the full list
-    'category': 'Uncategorized',
-    'version': '0.1',
-
-    # any module necessary for this one to work correctly
-    'depends': ['web'],
-
-    # always loaded
+    'author': 'Q-Pharma TN',
+    'depends': ['base', 'web'],
     'data': [
-        # 'security/ir.model.access.csv',
+        'security/ir.model.access.csv',
+        'data/ir_config_parameter.xml',
+        'views/res_config_settings_views.xml',
         'views/favicon.xml',
-#        'views/templates.xml',
-    ],
-    # only loaded in demonstration mode
-    'demo': [
-        'demo/demo.xml',
+
     ],
     'installable': True,
-
+    'application': False,
+    'license': 'LGPL-3',
 }
-

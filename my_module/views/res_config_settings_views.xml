@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="res_config_settings_view_qpharma_ocr" model="ir.ui.view">
+            <field name="name">res.config.settings.view.qpharma.ocr</field>
+            <field name="model">res.config.settings</field>
+            <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <group string="Q-Pharma OCR — Ordonnances">
+                            <field name="qpharma_openai_api_key" password="True" placeholder="sk-..."/>
+                            <field name="qpharma_openai_model" placeholder="gpt-4o"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

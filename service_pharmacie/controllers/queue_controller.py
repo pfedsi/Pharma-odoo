@@ -9,20 +9,12 @@ class QueueController(http.Controller):
 
     # ── 1. Liste des files actives ────────────────────────────────────────────
 
-    @http.route("/api/pharmacy/queues",
-                auth="public", methods=["GET"], csrf=False)
+    @http.route("/api/pharmacy/queues", auth="public", methods=["GET"], csrf=False)
     @handle_service_errors
     def get_queues(self):
-        """
-        GET /api/pharmacy/queues
-
-        Retourne uniquement les files actives.
-        Si un service est lié, il doit aussi être actif.
-
-        200 : { "queues": [ Queue, ... ] }
-        """
-        svc = QueueService(http.request.env)
-        return ok({"queues": svc.list_active()})
+            type_affichage = http.request.params.get("type_affichage") or None
+            svc = QueueService(http.request.env)
+            return ok({"queues": svc.list_active(type_affichage=type_affichage)})
 
     # ── 2. Détail d'une file ──────────────────────────────────────────────────
 

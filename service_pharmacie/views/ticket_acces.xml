@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <data>
+
+        <template id="ticket_access_page" name="Ticket Access Page">
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Accès Ticket</title>
+
+                    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+                    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&amp;display=swap"/>
+
+                    <style>
+                        body {
+                            margin: 0;
+                            font-family: "Inter", sans-serif;
+                            background: #f4f7fb;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            height: 100vh;
+                        }
+
+                        .access-box {
+                            background: #ffffff;
+                            padding: 40px;
+                            border-radius: 16px;
+                            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+                            text-align: center;
+                            width: 320px;
+                        }
+
+                        .access-title {
+                            font-size: 24px;
+                            font-weight: 800;
+                            margin-bottom: 20px;
+                        }
+
+                        .access-input {
+                            width: 100%;
+                            padding: 12px;
+                            border-radius: 10px;
+                            border: 1px solid #ccc;
+                            font-size: 16px;
+                            margin-bottom: 15px;
+                        }
+
+                        .access-btn {
+                            width: 100%;
+                            padding: 12px;
+                            border-radius: 10px;
+                            border: none;
+                            background: #16a34a;
+                            color: white;
+                            font-weight: 700;
+                            cursor: pointer;
+                        }
+
+                        .access-btn:hover {
+                            background: #15803d;
+                        }
+
+                        .error {
+                            color: #dc2626;
+                            margin-top: 10px;
+                            font-weight: 600;
+                        }
+                    </style>
+                </head>
+
+                <body>
+                    <div class="access-box">
+
+                        <div class="access-title">Accès Interface Ticket</div>
+
+                        <form action="/pharmacy/ticket/access/check" method="post">
+
+                            <input type="password"
+                                   name="password"
+                                   placeholder="Mot de passe"
+                                   class="access-input"
+                                   required="required"/>
+
+                            <button type="submit" class="access-btn">
+                                Valider
+                            </button>
+
+                        </form>
+
+                        <t t-if="request.params.get('error') == '1'">
+                            <div class="error">
+                                Mot de passe incorrect
+                            </div>
+                        </t>
+
+                        <t t-if="request.params.get('error') == 'config'">
+                            <div class="error">
+                                Mot de passe non configuré
+                            </div>
+                        </t>
+
+                    </div>
+                </body>
+            </html>
+        </template>
+
+    </data>
+</odoo>

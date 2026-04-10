@@ -11,30 +11,12 @@ class ServiceController(http.Controller):
 
     # ── 1. Liste des services actifs ──────────────────────────────────────────
 
-    @http.route("/api/pharmacy/services",
-                auth="public", methods=["GET"], csrf=False)
+    @http.route("/api/pharmacy/services", auth="public", methods=["GET"], csrf=False)
     @handle_service_errors
     def list_services(self):
-        """
-        GET /api/pharmacy/services
-
-        Response 200 :
-        {
-          "services": [
-            {
-              "id": 1,
-              "nom": "Ordonnances",
-              "heure_ouverture": "08:00",
-              "heure_fermeture": "18:00",
-              "duree_creneau": 30,
-              "horaires": [ ... ],
-              ...
-            }
-          ]
-        }
-        """
+        type_affichage = http.request.params.get("type_affichage") or None
         svc = ServiceService(http.request.env)
-        return ok({"services": svc.list_active()})
+        return ok({"services": svc.list_active(type_affichage=type_affichage)})
 
     # ── 2. Détail d'un service ────────────────────────────────────────────────
 
@@ -101,3 +83,4 @@ class ServiceController(http.Controller):
         date_str = http.request.params.get("date") or __import__("datetime").date.today().isoformat()
         svc = ServiceService(http.request.env)
         return ok(svc.get_slots(service_id, date_str))
+      

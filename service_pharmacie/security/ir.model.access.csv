@@ -13,3 +13,6 @@ access_pharmacy_service_horaire_user,pharmacy.service.horaire.user,model_pharmac
 access_pharmacy_service_horaire_manager,pharmacy.service.horaire.manager,model_pharmacy_service_horaire,base.group_system,1,1,1,1
 access_pharmacy_localization,pharmacy.localization,model_pharmacy_localization,,1,1,1,1
 access_pharmacy_reservation,pharmacy.reservation,model_pharmacy_reservation,,1,1,1,1
+access_pharmacy_queue_history_user,access.pharmacy.queue.history.user,model_pharmacy_queue_history,base.group_user,1,1,1,1
+access_pharmacie_forme_galenique_user,access_pharmacie_forme_galenique_user,model_pharmacie_forme_galenique,base.group_user,1,1,1,1
+access_forme_galenique_manager,pharmacie.forme.galenique.manager,model_pharmacie_forme_galenique,base.group_system,1,1,1,1
