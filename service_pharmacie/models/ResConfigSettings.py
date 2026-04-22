@@ -77,3 +77,4 @@ class ResConfigSettings(models.TransientModel):
         config_parameter="service_pharmacie.assistant_min_records",
         default=15,
     )
+    

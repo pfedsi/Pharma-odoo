@@ -16,3 +16,9 @@ access_pharmacy_reservation,pharmacy.reservation,model_pharmacy_reservation,,1,1
 access_pharmacy_queue_history_user,access.pharmacy.queue.history.user,model_pharmacy_queue_history,base.group_user,1,1,1,1
 access_pharmacie_forme_galenique_user,access_pharmacie_forme_galenique_user,model_pharmacie_forme_galenique,base.group_user,1,1,1,1
 access_forme_galenique_manager,pharmacie.forme.galenique.manager,model_pharmacie_forme_galenique,base.group_system,1,1,1,1
+access_pharmacy_prescription_user,access.pharmacy.prescription.user,model_pharmacy_prescription,base.group_user,1,1,1,1
+access_pharmacy_prescription_line_user,access.pharmacy.prescription.line.user,model_pharmacy_prescription_line,base.group_user,1,1,1,1
+access_pharmacy_mobile_order_user,access.pharmacy.mobile.order.user,model_pharmacy_mobile_order,base.group_user,1,1,1,0
+access_pharmacy_mobile_order_line_user,access.pharmacy.mobile.order.line.user,model_pharmacy_mobile_order_line,base.group_user,1,1,1,0
+access_pharmacy_mobile_order_manager,access.pharmacy.mobile.order.manager,model_pharmacy_mobile_order,base.group_system,1,1,1,1
+access_pharmacy_mobile_order_line_manager,access.pharmacy.mobile.order.line.manager,model_pharmacy_mobile_order_line,base.group_system,1,1,1,1

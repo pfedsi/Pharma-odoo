@@ -17,13 +17,23 @@
     </record>
 
     <!-- ══════════════════════════════════════════
+         ACTION Commandes mobiles
+    ══════════════════════════════════════════ -->
+    <record id="action_pharmacy_mobile_order" model="ir.actions.act_window">
+        <field name="name">Commandes mobiles</field>
+        <field name="res_model">pharmacy.mobile.order</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ══════════════════════════════════════════
          MENU RACINE
     ══════════════════════════════════════════ -->
     <menuitem id="menu_pharmacy_root"
               name="Pharmacie"
               sequence="10"
               web_icon="service_pharmacie,static/description/icon.png"/>
-<!-- ══════════════════════════════════════════
+
+    <!-- ══════════════════════════════════════════
          MÉDICAMENTS — Catalogue & Inventaire
     ══════════════════════════════════════════ -->
     <menuitem id="menu_pharmacy_medicaments"
@@ -57,7 +67,17 @@
               action="action_pharmacy_ticket"
               sequence="20"/>
 
-    
+    <menuitem id="menu_pharmacy_prescriptions"
+              name="Ordonnances"
+              parent="menu_pharmacy_activity"
+              action="action_pharmacy_prescription"
+              sequence="30"/>
+
+    <menuitem id="menu_pharmacy_mobile_orders"
+              name="Commandes mobiles"
+              parent="menu_pharmacy_activity"
+              action="action_pharmacy_mobile_order"
+              sequence="40"/>
 
     <!-- ══════════════════════════════════════════
          RÉFÉRENTIEL — Données de base
@@ -118,7 +138,5 @@
               parent="menu_pharmacy_configuration"
               action="action_service_pharmacie_settings"
               sequence="10"/>
-
-    
 
 </odoo>

@@ -160,6 +160,8 @@ class ServiceService:
             "heure_fermeture": _fmt_time(s.heure_fermeture),
             "overnight": overnight,
             "duree_creneau": s.duree_creneau or 0,
+            "multiplicateur_creneau": int(s.multiplicateur_creneau or 2),
+            "warning_creneau": s.warning_creneau,
 
             # Type d'affichage
             "type_affichage": s.type_affichage or "physique",

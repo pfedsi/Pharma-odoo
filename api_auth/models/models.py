@@ -46,8 +46,8 @@ class ResUsers(models.Model):
     # Computed full name sync
     # ----------------------------------------------------------------
     def _sync_name(self):
-        """Sync the `name` field from first/last name when both are set."""
-        parts = [self.first_name or '', self.last_name or '']
-        full = ' '.join(p.strip() for p in parts if p.strip())
-        if full:
-            self.name = full
+        for user in self:
+            parts = [user.first_name or '', user.last_name or '']
+            full = ' '.join(p.strip() for p in parts if p.strip())
+            if full:
+                user.name = full

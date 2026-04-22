@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Swagger / OpenAPI 3.0 — Pharmacy Queue API
-"""
 
 # ── Security scheme ───────────────────────────────────────────────────────────
 
@@ -160,17 +156,11 @@ SERVICE_SCHEMAS = {
     },
 
     # ── Queue ─────────────────────────────────────────────────────────────────
-    # ✅ CORRIGÉ : ajout display_name, service, position_client_virtuel
-    # ✅ CORRIGÉ : nb_en_attente (nom réel du champ) au lieu de nb_en_attente
-    #             (le vieux schema utilisait "nb_en_attente" OK, mais "name" seul
-    #              ne reflétait pas ce que le service retourne réellement)
 
     "Queue": {
         "type": "object",
         "properties": {
-            "id": {
-                "type": "integer", "example": 2,
-            },
+            "id": {"type": "integer", "example": 2},
             "name": {
                 "type": "string", "example": "File – Ordonnances",
                 "description": "Nom brut de la file (champ stocké)",
@@ -209,7 +199,6 @@ SERVICE_SCHEMAS = {
     },
 
     # ── QueueRef (embedded dans Reservation) ─────────────────────────────────
-    # ✅ NOUVEAU : objet allégé utilisé dans les réservations
 
     "QueueRef": {
         "type": "object",
@@ -246,8 +235,6 @@ SERVICE_SCHEMAS = {
         "required": ["id", "numero", "etat", "position"],
     },
 
-    # ✅ CORRIGÉ : ajout queue_id, heure_fin, reservation_id
-    #             pour correspondre à TicketController.get_ticket / list_my_tickets
     "Ticket": {
         "type": "object",
         "properties": {
@@ -301,7 +288,6 @@ SERVICE_SCHEMAS = {
         "required": ["id", "numero", "etat", "position", "type_ticket", "heure_creation"],
     },
 
-    # ✅ NOUVEAU : réponse pour GET /api/pharmacy/tickets/mine
     "TicketsListResponse": {
         "type": "object",
         "properties": {
@@ -318,8 +304,6 @@ SERVICE_SCHEMAS = {
     },
 
     # ── Réservation ───────────────────────────────────────────────────────────
-    # ✅ CORRIGÉ : queue est maintenant un objet QueueRef (plus une string)
-    # ✅ AJOUT   : fenetre_je_suis_la pour activer/désactiver le bouton côté mobile
 
     "Reservation": {
         "type": "object",
@@ -385,7 +369,6 @@ SERVICE_SCHEMAS = {
     },
 
     # ── Résultat Je suis là ───────────────────────────────────────────────────
-    # ✅ CORRIGÉ : ajout queue_id + queue dans le ticket retourné
 
     "JeSuisLaSucces": {
         "type": "object",
@@ -414,8 +397,6 @@ SERVICE_SCHEMAS = {
         },
         "required": ["success", "ticket", "distance_metres"],
     },
-
-    # ✅ CORRIGÉ : ajout du cas hors_fenetre avec ses champs spécifiques
 
     "JeSuisLaEchec": {
         "type": "object",
@@ -471,6 +452,150 @@ SERVICE_SCHEMAS = {
         "required": ["id"],
     },
 
+    # ── Produit parapharmacie ─────────────────────────────────────────────────
+
+    "ProduitParapharmacie": {
+        "type": "object",
+        "properties": {
+            "id":                  {"type": "integer", "example": 42},
+            "nom_commercial":      {"type": "string",  "example": "Biafine"},
+            "nom_generique":       {"type": "string",  "example": ""},
+            "name":                {"type": "string",  "example": "Biafine crème"},
+            "dosage":              {"type": "string",  "example": ""},
+            "fabricant":           {"type": "string",  "example": "Pharma Labs"},
+            "prix_vente_tnd":      {"type": "number",  "example": 12.500},
+            "prix_achat_tnd":      {"type": "number",  "example": 8.000},
+            "tva_taux":            {"type": "string",  "example": "19"},
+            "forme_galenique":     {"type": "string",  "example": "Crème"},
+            "forme_galenique_id":  {"type": "integer", "nullable": True, "example": 5},
+            "quantite_stock":      {"type": "integer", "example": 100},
+            "disponible":          {"type": "boolean", "example": True},
+            "necessite_ordonnance":{"type": "boolean", "example": False},
+            "parapharmaceutique":  {"type": "boolean", "example": True},
+            "image_url":           {"type": "string",  "example": "https://demopharma.eprswarm.com/api/parapharma/image/42?unique=1712345678000"},
+        },
+        "required": ["id", "name", "prix_vente_tnd", "disponible"],
+    },
+
+    "ProduitParapharmacieDetail": {
+        "allOf": [
+            {"$ref": "#/components/schemas/ProduitParapharmacie"},
+            {
+                "type": "object",
+                "properties": {
+                    "description_pharmacie":  {"type": "string", "example": "Crème émolliente apaisante."},
+                    "code_barre_pharmacie":   {"type": "string", "example": "3400930102015"},
+                    "seuil_alerte_stock":     {"type": "number", "example": 10.0},
+                    "alerte_stock":           {"type": "boolean", "example": False},
+                    "lot_count":              {"type": "integer", "example": 3},
+                    "prix_ttc": {
+                        "type": "number", "example": 14.875,
+                        "description": "Prix TTC calculé côté serveur",
+                    },
+                },
+            },
+        ]
+    },
+
+    # ── Ligne de panier ───────────────────────────────────────────────────────
+
+    "LignePanier": {
+        "type": "object",
+        "properties": {
+            "product_id":            {"type": "integer", "example": 42},
+            "nom_commercial":        {"type": "string",  "example": "Biafine"},
+            "quantite":              {"type": "integer", "example": 2},
+            "prix_unitaire_ht":      {"type": "number",  "example": 12.500},
+            "tva_taux":              {"type": "string",  "example": "19"},
+            "montant_ht":            {"type": "number",  "example": 25.000},
+            "montant_tva":           {"type": "number",  "example": 4.750},
+            "montant_ttc":           {"type": "number",  "example": 29.750},
+            "stock_disponible":      {"type": "integer", "example": 100},
+            "alerte_stock_insuffisant": {"type": "boolean", "example": False},
+        },
+        "required": ["product_id", "nom_commercial", "quantite", "montant_ttc"],
+    },
+
+    # ── Prescription ──────────────────────────────────────────────────────────
+
+    "PrescriptionMobilePayload": {
+        "type": "object",
+        "description": "Payload mobile complet d'une ordonnance (export_mobile_payload)",
+        "properties": {
+            "id":     {"type": "integer", "example": 7},
+            "state":  {"type": "string",  "example": "draft"},
+            "lines":  {"type": "array",   "items": {"type": "object"}},
+        },
+        "required": ["id"],
+    },
+
+    # ── Commande mobile ───────────────────────────────────────────────────────
+
+    "MobileOrder": {
+        "type": "object",
+        "description": "Représentation d'une commande mobile (export_order_payload)",
+        "properties": {
+            "id":    {"type": "integer", "example": 3},
+            "state": {"type": "string",  "example": "draft"},
+            "lines": {"type": "array",   "items": {"type": "object"}},
+        },
+        "required": ["id"],
+    },
+
+    # ── Localisation pharmacie ────────────────────────────────────────────────
+
+    "PharmacyLocalisation": {
+        "type": "object",
+        "description": "Données de localisation/configuration de la pharmacie",
+        "properties": {
+            "nom":       {"type": "string", "example": "Pharmacie Ibn Khaldoun"},
+            "adresse":   {"type": "string", "example": "12 Rue Ibn Khaldoun, Tunis"},
+            "latitude":  {"type": "number", "format": "double", "example": 36.8065},
+            "longitude": {"type": "number", "format": "double", "example": 10.1815},
+            "telephone": {"type": "string", "example": "+216 71 000 000"},
+        },
+    },
+
+    # ── Display (écran d'affichage) ───────────────────────────────────────────
+
+    "DisplayQueue": {
+        "type": "object",
+        "description": "Données d'une file pour l'écran d'affichage public",
+        "properties": {
+            "queue_id":   {"type": "integer", "example": 1},
+            "queue_name": {"type": "string",  "example": "Ordonnances – File A"},
+            "appeles": {
+                "type": "array",
+                "description": "Tickets actuellement appelés (un par guichet)",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "rattachement_id": {"type": "integer", "example": 2},
+                        "ticket_id":       {"type": "integer", "example": 42},
+                        "ticket_name":     {"type": "string",  "example": "A-007"},
+                        "poste_number":    {"type": "string",  "example": "3"},
+                        "etat":            {"type": "string",  "example": "appele"},
+                        "priorite":        {"type": "integer", "example": 1},
+                    },
+                },
+            },
+            "en_attente": {
+                "type": "array",
+                "description": "Prochains tickets en attente (max 10)",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "ticket_id":   {"type": "integer", "example": 43},
+                        "ticket_name": {"type": "string",  "example": "A-008"},
+                        "etat":        {"type": "string",  "example": "en_attente"},
+                        "priorite":    {"type": "integer", "example": 1},
+                    },
+                },
+            },
+        },
+        "required": ["queue_id", "queue_name", "appeles", "en_attente"],
+    },
+
     # ── Erreur générique ──────────────────────────────────────────────────────
 
     "Error": {
@@ -496,11 +621,23 @@ def _err(code: str) -> dict:
     return {"description": code, "content": _json(_ref("Error"))}
 
 
-def _path_param(name: str) -> dict:
+def _path_param(name: str, type_: str = "integer") -> dict:
     return {
         "name": name, "in": "path", "required": True,
-        "schema": {"type": "integer"},
+        "schema": {"type": type_},
     }
+
+
+def _query_param(name: str, description: str = "", required: bool = False,
+                 type_: str = "string", enum: list = None, example=None) -> dict:
+    schema = {"type": type_}
+    if enum:
+        schema["enum"] = enum
+    if example is not None:
+        schema["example"] = example
+    p = {"name": name, "in": "query", "required": required,
+         "schema": schema, "description": description}
+    return p
 
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -515,6 +652,16 @@ SERVICE_PATHS = {
             "description": "Retourne tous les services actifs avec leurs horaires journaliers.",
             "tags": ["Services"],
             "security": [],
+            # CORRECTION : ajout du query param type_affichage (présent dans ServiceController)
+            "parameters": [
+                _query_param(
+                    "type_affichage",
+                    description=(
+                        "Filtre optionnel sur le type d'affichage du service. "
+                        "Transmis tel quel au service métier."
+                    ),
+                ),
+            ],
             "responses": {
                 "200": {
                     "description": "Liste des services",
@@ -596,7 +743,6 @@ SERVICE_PATHS = {
     },
 
     # ═══════════════════════════════ QUEUES ══════════════════════════════════
-    # ✅ CORRIGÉ : description mise à jour pour refléter le filtre service actif
 
     "/api/pharmacy/queues": {
         "get": {
@@ -608,6 +754,16 @@ SERVICE_PATHS = {
             ),
             "tags": ["Queues"],
             "security": [],
+            # CORRECTION : ajout du query param type_affichage (présent dans QueueController)
+            "parameters": [
+                _query_param(
+                    "type_affichage",
+                    description=(
+                        "Filtre optionnel sur le type d'affichage. "
+                        "Transmis tel quel au service métier."
+                    ),
+                ),
+            ],
             "responses": {
                 "200": {
                     "description": "Liste des files actives",
@@ -806,21 +962,23 @@ SERVICE_PATHS = {
 
     # ═══════════════════════════════ TICKETS ═════════════════════════════════
 
-    # ✅ NOUVEAU : POST /api/pharmacy/tickets — création ticket physique
     "/api/pharmacy/tickets": {
         "post": {
             "summary": "Créer un ticket",
             "description": (
-                "Crée un ticket pour l'utilisateur connecté dans une file donnée. "
-                "Par défaut type_ticket = 'physique'. "
+                "Crée un ticket dans une file donnée. "
+                "type_ticket='physique' ne doit pas avoir de reservation_id. "
+                "type_ticket='virtuel' requiert un reservation_id. "
                 "Pour les tickets virtuels, préférer le flux « Je suis là » "
                 "qui crée le ticket automatiquement."
             ),
             "tags": ["Tickets"],
-            "security": [{"cookieAuth": []}],
+            "security": [],
             "requestBody": {
                 "required": True,
                 "content": {
+                    # CORRECTION : le contrôleur accepte form-urlencoded ET json ;
+                    # reservation_id était absent du schéma précédent.
                     "application/x-www-form-urlencoded": {
                         "schema": {
                             "type": "object",
@@ -836,6 +994,15 @@ SERVICE_PATHS = {
                                     "default": "physique",
                                     "description": "Type de ticket. Défaut : physique.",
                                 },
+                                "reservation_id": {
+                                    "type": "integer",
+                                    "nullable": True,
+                                    "example": 5,
+                                    "description": (
+                                        "Requis pour type_ticket='virtuel'. "
+                                        "Interdit pour type_ticket='physique'."
+                                    ),
+                                },
                             },
                         }
                     },
@@ -844,13 +1011,20 @@ SERVICE_PATHS = {
                             "type": "object",
                             "required": ["queue_id"],
                             "properties": {
-                                "queue_id": {
-                                    "type": "integer", "example": 1,
-                                },
+                                "queue_id":      {"type": "integer", "example": 1},
                                 "type_ticket": {
                                     "type": "string",
                                     "enum": ["physique", "virtuel"],
                                     "default": "physique",
+                                },
+                                "reservation_id": {
+                                    "type": "integer",
+                                    "nullable": True,
+                                    "example": 5,
+                                    "description": (
+                                        "Requis pour type_ticket='virtuel'. "
+                                        "Interdit pour type_ticket='physique'."
+                                    ),
                                 },
                             },
                         }
@@ -865,16 +1039,15 @@ SERVICE_PATHS = {
                         "properties": {"ticket": _ref("Ticket")},
                     }),
                 },
-                "400": _err("queue_id manquant ou type_ticket invalide"),
-                "401": _err("Non authentifié"),
+                "400": _err(
+                    "queue_id manquant, type_ticket invalide, "
+                    "ou règle métier non respectée (reservation_id manquant/interdit)"
+                ),
                 "404": _err("File d'attente introuvable"),
             },
         }
     },
 
-    # ✅ NOUVEAU : GET /api/pharmacy/tickets/mine — mes tickets
-    # ⚠️  Ce path DOIT être déclaré AVANT /{ticket_id} pour éviter
-    #     qu'Odoo/OpenAPI interprète "mine" comme un entier.
     "/api/pharmacy/tickets/mine": {
         "get": {
             "summary": "Mes tickets",
@@ -905,7 +1078,6 @@ SERVICE_PATHS = {
         }
     },
 
-    # GET /api/pharmacy/tickets/{ticket_id} — détail d'un ticket
     "/api/pharmacy/tickets/{ticket_id}": {
         "get": {
             "summary": "Détail d'un ticket",
@@ -973,6 +1145,1156 @@ SERVICE_PATHS = {
                 "400": _err("Aucun ticket en attente"),
                 "401": _err("Non authentifié"),
                 "404": _err("Rattachement introuvable"),
+            },
+        }
+    },
+
+    # ═══════════════════════════════ LOCALISATION ════════════════════════════
+    # AJOUT : PharmacyLocalizationController
+
+    "/api/pharmacy/localisation": {
+        "post": {
+            "summary": "Localisation de la pharmacie",
+            "description": (
+                "Retourne les données de localisation et de configuration de la pharmacie "
+                "(singleton). Utilise le type jsonrpc."
+            ),
+            "tags": ["Pharmacie"],
+            "security": [],
+            "requestBody": {
+                "required": False,
+                "content": _json({"type": "object"}),
+            },
+            "responses": {
+                "200": {
+                    "description": "Localisation trouvée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean", "example": True},
+                            "data":    _ref("PharmacyLocalisation"),
+                        },
+                    }),
+                },
+                "200 (échec)": {
+                    "description": "Localisation introuvable",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean", "example": False},
+                            "message": {"type": "string", "example": "Localisation pharmacie introuvable."},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    # ═══════════════════════════════ DISPLAY (écran public) ══════════════════
+    # AJOUT : DisplayController
+
+    "/pharmacy/display": {
+        "get": {
+            "summary": "Page d'affichage public des tickets",
+            "description": (
+                "Rendu HTML de la page d'affichage des tickets (template QWeb). "
+                "Accessible sans authentification."
+            ),
+            "tags": ["Display"],
+            "security": [],
+            "responses": {
+                "200": {"description": "Page HTML rendue"},
+            },
+        }
+    },
+
+    "/pharmacy/display/data": {
+        "get": {
+            "summary": "Données temps-réel pour l'écran d'affichage",
+            "description": (
+                "Retourne en JSON l'état courant de toutes les files actives : "
+                "tickets appelés par guichet et prochains tickets en attente (max 10 par file). "
+                "Accepte GET et POST."
+            ),
+            "tags": ["Display"],
+            "security": [],
+            "responses": {
+                "200": {
+                    "description": "Données d'affichage",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean", "example": True},
+                            "queues": {
+                                "type": "array",
+                                "items": _ref("DisplayQueue"),
+                            },
+                        },
+                    }),
+                },
+            },
+        },
+        "post": {
+            "summary": "Données temps-réel pour l'écran d'affichage (POST)",
+            "description": "Alias POST de GET /pharmacy/display/data.",
+            "tags": ["Display"],
+            "security": [],
+            "responses": {
+                "200": {
+                    "description": "Données d'affichage",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean", "example": True},
+                            "queues": {
+                                "type": "array",
+                                "items": _ref("DisplayQueue"),
+                            },
+                        },
+                    }),
+                },
+            },
+        },
+    },
+
+    # ═══════════════════════════════ TICKET DISPLAY (kiosk) ══════════════════
+    # AJOUT : TicketDisplayController
+
+    "/pharmacy/ticket/display": {
+        "get": {
+            "summary": "Page kiosque d'affichage des tickets (protégée par mot de passe)",
+            "description": (
+                "Rendu HTML de la page kiosque. Requiert :\n"
+                "1. Le paramètre système service_pharmacie.ticket_public_enabled = 'True'.\n"
+                "2. Une session valide (cookie ticket_display_ok).\n"
+                "Redirige vers /pharmacy/ticket/access sinon."
+            ),
+            "tags": ["Display"],
+            "security": [],
+            "responses": {
+                "200": {"description": "Page HTML rendue"},
+                "302": {"description": "Redirection vers la page d'accès"},
+                "404": {"description": "Fonctionnalité désactivée"},
+            },
+        }
+    },
+
+    "/pharmacy/ticket/access": {
+        "get": {
+            "summary": "Page d'authentification kiosque",
+            "description": "Formulaire de saisie du mot de passe pour accéder au kiosque.",
+            "tags": ["Display"],
+            "security": [],
+            "responses": {
+                "200": {"description": "Page HTML rendue"},
+            },
+        }
+    },
+
+    "/pharmacy/ticket/access/check": {
+        "post": {
+            "summary": "Vérification du mot de passe kiosque",
+            "description": (
+                "Vérifie le mot de passe soumis par le formulaire. "
+                "En cas de succès, positionne ticket_display_ok dans la session "
+                "et redirige vers /pharmacy/ticket/display."
+            ),
+            "tags": ["Display"],
+            "security": [],
+            "requestBody": {
+                "required": True,
+                "content": {
+                    "application/x-www-form-urlencoded": {
+                        "schema": {
+                            "type": "object",
+                            "required": ["password"],
+                            "properties": {
+                                "password": {"type": "string", "example": "mon_mot_de_passe"},
+                            },
+                        }
+                    }
+                },
+            },
+            "responses": {
+                "302": {"description": "Redirection vers /pharmacy/ticket/display (succès) ou /pharmacy/ticket/access?error=1 (échec)"},
+                "404": {"description": "Fonctionnalité désactivée"},
+            },
+        }
+    },
+
+    "/pharmacy/ticket/logout": {
+        "get": {
+            "summary": "Déconnexion kiosque",
+            "description": "Supprime ticket_display_ok de la session et redirige vers /pharmacy/ticket/access.",
+            "tags": ["Display"],
+            "security": [],
+            "responses": {
+                "302": {"description": "Redirection vers la page d'accès"},
+            },
+        }
+    },
+
+    # ═══════════════════════════════ PARAPHARMACIE ═══════════════════════════
+    # AJOUT : ParapharmacieController
+
+    "/api/parapharma/image/{product_id}": {
+        "get": {
+            "summary": "Image d'un produit",
+            "description": "Retourne l'image (128px) d'un product.template en PNG.",
+            "tags": ["Parapharmacie"],
+            "security": [],
+            "parameters": [_path_param("product_id")],
+            "responses": {
+                "200": {
+                    "description": "Image PNG",
+                    "content": {"image/png": {"schema": {"type": "string", "format": "binary"}}},
+                },
+                "404": {"description": "Produit introuvable ou sans image"},
+            },
+        }
+    },
+
+    "/api/pharmacie/parapharmaceutique": {
+        "get": {
+            "summary": "Liste des produits parapharmaceutiques",
+            "description": "Pagination, filtre par forme galénique et disponibilité.",
+            "tags": ["Parapharmacie"],
+            "security": [],
+            "parameters": [
+                _query_param("page",              "Page (défaut 1)",              example=1,  type_="integer"),
+                _query_param("limit",             "Résultats par page (max 50)",  example=20, type_="integer"),
+                _query_param("forme_galenique_id","ID de la forme galénique",     type_="integer"),
+                _query_param("disponible",        "Filtrer les produits en stock (1/true/yes)"),
+            ],
+            "responses": {
+                "200": {
+                    "description": "Liste paginée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":  {"type": "boolean"},
+                            "total":    {"type": "integer"},
+                            "page":     {"type": "integer"},
+                            "limit":    {"type": "integer"},
+                            "pages":    {"type": "integer"},
+                            "products": {"type": "array", "items": _ref("ProduitParapharmacie")},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/pharmacie/parapharmaceutique/{product_id}": {
+        "get": {
+            "summary": "Détail d'un produit parapharmaceutique",
+            "tags": ["Parapharmacie"],
+            "security": [],
+            "parameters": [_path_param("product_id")],
+            "responses": {
+                "200": {
+                    "description": "Produit trouvé",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "product": _ref("ProduitParapharmacieDetail"),
+                        },
+                    }),
+                },
+                "404": _err("Produit parapharmaceutique introuvable"),
+            },
+        }
+    },
+
+    "/api/pharmacie/parapharmaceutique/search": {
+        "post": {
+            "summary": "Recherche plein-texte de produits parapharmaceutiques",
+            "tags": ["Parapharmacie"],
+            "security": [],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["query"],
+                    "properties": {
+                        "query": {"type": "string",  "example": "biafine"},
+                        "page":  {"type": "integer", "example": 1, "default": 1},
+                        "limit": {"type": "integer", "example": 20, "default": 20},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Résultats de recherche",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":  {"type": "boolean"},
+                            "query":    {"type": "string"},
+                            "total":    {"type": "integer"},
+                            "page":     {"type": "integer"},
+                            "limit":    {"type": "integer"},
+                            "products": {"type": "array", "items": _ref("ProduitParapharmacie")},
+                        },
+                    }),
+                },
+                "400": _err("Le champ 'query' est requis"),
+            },
+        }
+    },
+
+    "/api/pharmacie/panier/calculer": {
+        "post": {
+            "summary": "Calculer le montant d'un panier",
+            "description": (
+                "Calcule HT, TVA et TTC pour une liste d'articles. "
+                "Accepte les produits parapharmaceutiques ET les médicaments. "
+                "La TVA est lue depuis Odoo (non fournie par le client)."
+            ),
+            "tags": ["Parapharmacie"],
+            "security": [],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["articles"],
+                    "properties": {
+                        "articles": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "required": ["product_id", "quantite"],
+                                "properties": {
+                                    "product_id": {"type": "integer", "example": 42},
+                                    "quantite":   {"type": "integer", "example": 2},
+                                },
+                            },
+                        }
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Calcul réalisé",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":     {"type": "boolean"},
+                            "lignes":      {"type": "array", "items": _ref("LignePanier")},
+                            "total_ht":    {"type": "number"},
+                            "total_tva":   {"type": "number"},
+                            "total_ttc":   {"type": "number"},
+                            "nb_articles": {"type": "integer"},
+                            "erreurs":     {"type": "array", "items": {"type": "object"}},
+                        },
+                    }),
+                },
+                "400": _err("La liste 'articles' est vide ou absente"),
+            },
+        }
+    },
+
+    # ═══════════════════════════════ CHATBOT ═════════════════════════════════
+    # AJOUT : QPharmaBotController (toutes les routes sont type=jsonrpc)
+
+    "/api/chatbot/message": {
+        "post": {
+            "summary": "Envoyer un message au chatbot",
+            "description": "Point d'entrée principal du chatbot QPharma. Type jsonrpc.",
+            "tags": ["Chatbot"],
+            "security": [],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "description": "Payload jsonrpc — contenu libre selon le service chatbot",
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Réponse du chatbot",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/chatbot/stock": {
+        "post": {
+            "summary": "Consulter le stock via le chatbot",
+            "tags": ["Chatbot"],
+            "security": [],
+            "requestBody": {"required": True, "content": _json({"type": "object"})},
+            "responses": {
+                "200": {
+                    "description": "Données de stock",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                }
+            },
+        }
+    },
+
+    "/api/chatbot/panier": {
+        "post": {
+            "summary": "Consulter le panier chatbot",
+            "tags": ["Chatbot"],
+            "security": [],
+            "requestBody": {"required": True, "content": _json({"type": "object"})},
+            "responses": {
+                "200": {
+                    "description": "Contenu du panier",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                }
+            },
+        }
+    },
+
+    "/api/chatbot/panier/ajouter": {
+        "post": {
+            "summary": "Ajouter un article au panier chatbot",
+            "tags": ["Chatbot"],
+            "security": [],
+            "requestBody": {"required": True, "content": _json({"type": "object"})},
+            "responses": {
+                "200": {
+                    "description": "Article ajouté",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                }
+            },
+        }
+    },
+
+    "/api/chatbot/panier/modifier": {
+        "post": {
+            "summary": "Modifier un article du panier chatbot",
+            "tags": ["Chatbot"],
+            "security": [],
+            "requestBody": {"required": True, "content": _json({"type": "object"})},
+            "responses": {
+                "200": {
+                    "description": "Article modifié",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                }
+            },
+        }
+    },
+
+    "/api/chatbot/panier/vider": {
+        "post": {
+            "summary": "Vider le panier chatbot",
+            "tags": ["Chatbot"],
+            "security": [],
+            "requestBody": {"required": True, "content": _json({"type": "object"})},
+            "responses": {
+                "200": {
+                    "description": "Panier vidé",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                }
+            },
+        }
+    },
+
+    "/api/chatbot/panier/confirmer": {
+        "post": {
+            "summary": "Confirmer le panier chatbot",
+            "tags": ["Chatbot"],
+            "security": [],
+            "requestBody": {"required": True, "content": _json({"type": "object"})},
+            "responses": {
+                "200": {
+                    "description": "Panier confirmé",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                }
+            },
+        }
+    },
+
+    # ═══════════════════════════════ MOBILE ORDER ════════════════════════════
+    # AJOUT : MobileOrderController
+
+    "/api/mobile/order/start": {
+        "post": {
+            "summary": "Démarrer une commande mobile",
+            "description": (
+                "Crée une réservation et, si des lignes de panier valides sont fournies, "
+                "crée également la commande mobile associée."
+            ),
+            "tags": ["Commandes Mobile"],
+            "security": [],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["service_id", "date_heure_reservation"],
+                    "properties": {
+                        "service_id":              {"type": "integer", "example": 3},
+                        "date_heure_reservation":  {"type": "string", "format": "date-time", "example": "2026-03-17T09:00:00"},
+                        "partner_id":              {"type": "integer", "nullable": True, "example": 12},
+                        "prescription_id":         {"type": "integer", "nullable": True, "example": 7},
+                        "notes":                   {"type": "string", "example": ""},
+                        "cart_lines": {
+                            "type": "array",
+                            "description": "Lignes de panier unifiées",
+                            "items": {
+                                "type": "object",
+                                "required": ["product_id", "quantite"],
+                                "properties": {
+                                    "product_id": {"type": "integer", "example": 42},
+                                    "quantite":   {"type": "number",  "example": 2},
+                                },
+                            },
+                        },
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Réservation (et commande) créée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":      {"type": "boolean"},
+                            "reservation":  {"type": "object"},
+                            "mobile_order": {
+                                "oneOf": [_ref("MobileOrder"), {"type": "null"}],
+                                "description": "null si aucune ligne de panier valide",
+                            },
+                            "next_step":    {"type": "string", "example": "je_suis_la"},
+                        },
+                    }),
+                },
+                "200 (échec)": {
+                    "description": "Erreur métier",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean", "example": False},
+                            "message": {"type": "string"},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/mobile/order/cancel_reservation": {
+        "post": {
+            "summary": "Annuler une réservation (flux public, par payload)",
+            "description": "Annule une réservation identifiée par reservation_id dans le body.",
+            "tags": ["Commandes Mobile"],
+            "security": [],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["reservation_id"],
+                    "properties": {
+                        "reservation_id": {"type": "integer", "example": 5},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Réservation annulée ou erreur",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":        {"type": "boolean"},
+                            "message":        {"type": "string"},
+                            "reservation_id": {"type": "integer"},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/mobile/reservation/{reservation_id}/cancel": {
+        "post": {
+            "summary": "Annuler une réservation (route directe)",
+            "description": "Annule la réservation identifiée par l'ID dans l'URL.",
+            "tags": ["Commandes Mobile"],
+            "security": [],
+            "parameters": [_path_param("reservation_id")],
+            "responses": {
+                "200": {
+                    "description": "Réservation annulée ou erreur",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":        {"type": "boolean"},
+                            "message":        {"type": "string"},
+                            "reservation_id": {"type": "integer"},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/mobile/order/{order_id}": {
+        "post": {
+            "summary": "Récupérer une commande mobile",
+            "tags": ["Commandes Mobile"],
+            "security": [],
+            "parameters": [_path_param("order_id")],
+            "responses": {
+                "200": {
+                    "description": "Commande trouvée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":      {"type": "boolean"},
+                            "mobile_order": _ref("MobileOrder"),
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/mobile/order/{order_id}/attach_ticket": {
+        "post": {
+            "summary": "Rattacher un ticket à une commande mobile",
+            "tags": ["Commandes Mobile"],
+            "security": [],
+            "parameters": [_path_param("order_id")],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["ticket_id"],
+                    "properties": {
+                        "ticket_id": {"type": "integer", "example": 42},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Ticket rattaché",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":      {"type": "boolean"},
+                            "mobile_order": _ref("MobileOrder"),
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/mobile/order/{order_id}/confirm": {
+        "post": {
+            "summary": "Confirmer une commande mobile → POS",
+            "description": "Convertit la commande mobile en commande POS.",
+            "tags": ["Commandes Mobile"],
+            "security": [],
+            "parameters": [_path_param("order_id")],
+            "responses": {
+                "200": {
+                    "description": "Commande confirmée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":      {"type": "boolean"},
+                            "mobile_order": _ref("MobileOrder"),
+                            "pos_order": {
+                                "type": "object",
+                                "properties": {
+                                    "id":   {"type": "integer", "example": 100},
+                                    "name": {"type": "string",  "example": "POS/2026/0042"},
+                                },
+                            },
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/mobile/order/{order_id}/cancel": {
+        "post": {
+            "summary": "Annuler une commande mobile",
+            "description": (
+                "Annule la commande mobile. Si la réservation liée est en_attente, "
+                "elle est également annulée."
+            ),
+            "tags": ["Commandes Mobile"],
+            "security": [],
+            "parameters": [_path_param("order_id")],
+            "responses": {
+                "200": {
+                    "description": "Commande annulée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "message": {"type": "string"},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    # ═══════════════════════════════ PRESCRIPTIONS (API) ═════════════════════
+    # AJOUT : PrescriptionApiController
+
+    "/api/prescription/upload": {
+        "post": {
+            "summary": "Uploader une ordonnance",
+            "description": "Crée une ordonnance à partir d'un fichier base64 (image ou PDF).",
+            "tags": ["Ordonnances"],
+            "security": [],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["file_base64"],
+                    "properties": {
+                        "filename":    {"type": "string",  "example": "ordonnance.jpg"},
+                        "file_base64": {"type": "string",  "description": "Contenu du fichier en base64"},
+                        "source_type": {"type": "string",  "example": "virtual", "default": "virtual"},
+                        "ticket_id":   {"type": "integer", "nullable": True},
+                        "partner_id":  {"type": "integer", "nullable": True},
+                        "mimetype":    {"type": "string",  "example": "image/jpeg"},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Ordonnance créée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "data":    _ref("PrescriptionMobilePayload"),
+                        },
+                    }),
+                },
+                "200 (échec)": {
+                    "description": "Fichier manquant",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {"success": {"type": "boolean", "example": False}, "message": {"type": "string"}},
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/{prescription_id}/details": {
+        "post": {
+            "summary": "Détail d'une ordonnance",
+            "tags": ["Ordonnances"],
+            "security": [],
+            "parameters": [_path_param("prescription_id")],
+            "responses": {
+                "200": {
+                    "description": "Ordonnance trouvée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "data":    _ref("PrescriptionMobilePayload"),
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/line/{line_id}/delete": {
+        "post": {
+            "summary": "Supprimer une ligne d'ordonnance (marquer comme supprimée)",
+            "tags": ["Ordonnances"],
+            "security": [],
+            "parameters": [_path_param("line_id")],
+            "responses": {
+                "200": {
+                    "description": "Ligne marquée supprimée",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/line/{line_id}/update": {
+        "post": {
+            "summary": "Modifier une ligne d'ordonnance",
+            "tags": ["Ordonnances"],
+            "security": [],
+            "parameters": [_path_param("line_id")],
+            "requestBody": {
+                "required": False,
+                "content": _json({
+                    "type": "object",
+                    "properties": {
+                        "drug_name": {"type": "string"},
+                        "dosage":    {"type": "string"},
+                        "form":      {"type": "string"},
+                        "quantity":  {"type": "string"},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Ligne mise à jour",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/{prescription_id}/add_line": {
+        "post": {
+            "summary": "Ajouter une ligne à une ordonnance",
+            "tags": ["Ordonnances"],
+            "security": [],
+            "parameters": [_path_param("prescription_id")],
+            "requestBody": {
+                "required": False,
+                "content": _json({
+                    "type": "object",
+                    "properties": {
+                        "drug_name": {"type": "string"},
+                        "dosage":    {"type": "string"},
+                        "form":      {"type": "string"},
+                        "quantity":  {"type": "string"},
+                        "duration":  {"type": "string"},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Ligne créée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "line_id": {"type": "integer"},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/{prescription_id}/check_availability": {
+        "post": {
+            "summary": "Vérifier la disponibilité des médicaments d'une ordonnance",
+            "tags": ["Ordonnances"],
+            "security": [],
+            "parameters": [_path_param("prescription_id")],
+            "responses": {
+                "200": {
+                    "description": "Résultats de disponibilité",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "results": {"type": "object"},
+                            "data":    _ref("PrescriptionMobilePayload"),
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/line/{line_id}/choose_alternative": {
+        "post": {
+            "summary": "Accepter ou refuser un médicament alternatif",
+            "tags": ["Ordonnances"],
+            "security": [],
+            "parameters": [_path_param("line_id")],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["accept_alternative"],
+                    "properties": {
+                        "accept_alternative": {"type": "boolean", "example": True},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Choix enregistré",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                },
+            },
+        }
+    },
+
+    # ── Routes POS ────────────────────────────────────────────────────────────
+
+    "/pos/prescription/upload_for_order": {
+        "post": {
+            "summary": "Uploader une ordonnance pour une commande POS",
+            "description": "Associe une ordonnance à une commande POS existante. Auth utilisateur requis.",
+            "tags": ["Ordonnances", "POS"],
+            "security": [{"cookieAuth": []}],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["order_id", "file_base64"],
+                    "properties": {
+                        "order_id":    {"type": "integer", "example": 100},
+                        "filename":    {"type": "string",  "example": "ordonnance.jpg"},
+                        "file_base64": {"type": "string"},
+                        "mimetype":    {"type": "string",  "example": "image/jpeg"},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Ordonnance créée et associée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":         {"type": "boolean"},
+                            "data":            _ref("PrescriptionMobilePayload"),
+                            "prescription_id": {"type": "integer"},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/pos/prescription/scan": {
+        "post": {
+            "summary": "Scanner une ordonnance au kiosque POS",
+            "description": "Crée une ordonnance depuis le scanner kiosque sans commande POS associée. Auth utilisateur requis.",
+            "tags": ["Ordonnances", "POS"],
+            "security": [{"cookieAuth": []}],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["file_base64"],
+                    "properties": {
+                        "filename":    {"type": "string",  "example": "ordonnance.jpg"},
+                        "file_base64": {"type": "string"},
+                        "mimetype":    {"type": "string",  "example": "image/jpeg"},
+                        "ticket_id":   {"type": "integer", "nullable": True},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Ordonnance scannée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success":         {"type": "boolean"},
+                            "prescription_id": {"type": "integer"},
+                            "data":            _ref("PrescriptionMobilePayload"),
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/pos/prescription/get_product_for_pos": {
+        "post": {
+            "summary": "Récupérer un produit pour le POS",
+            "description": (
+                "Retourne les informations d'un product.product pour l'intégration POS. "
+                "Auth utilisateur requis. "
+                "Note : cette route est définie deux fois dans le contrôleur source — "
+                "seule la première définition est active."
+            ),
+            "tags": ["POS"],
+            "security": [{"cookieAuth": []}],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["product_id"],
+                    "properties": {
+                        "product_id": {"type": "integer", "example": 42},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Produit trouvé",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "data": {
+                                "type": "object",
+                                "properties": {
+                                    "id":           {"type": "integer"},
+                                    "display_name": {"type": "string"},
+                                    "lst_price":    {"type": "number"},
+                                },
+                            },
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    # ═══════════════════════════════ PRESCRIPTIONS (MOBILE) ══════════════════
+    # AJOUT : PrescriptionMobileController
+    # Note : ces routes dupliquent en partie PrescriptionApiController
+    # mais sont distinctes (préfixe /mobile/).
+
+    "/api/prescription/{prescription_id}/mobile/details": {
+        "post": {
+            "summary": "Détail mobile d'une ordonnance",
+            "tags": ["Ordonnances Mobile"],
+            "security": [],
+            "parameters": [_path_param("prescription_id")],
+            "responses": {
+                "200": {
+                    "description": "Ordonnance trouvée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "data":    _ref("PrescriptionMobilePayload"),
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/line/{line_id}/mobile/delete": {
+        "post": {
+            "summary": "Supprimer une ligne (mobile)",
+            "tags": ["Ordonnances Mobile"],
+            "security": [],
+            "parameters": [_path_param("line_id")],
+            "responses": {
+                "200": {
+                    "description": "Ligne marquée supprimée",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/line/{line_id}/mobile/update": {
+        "post": {
+            "summary": "Modifier une ligne (mobile)",
+            "tags": ["Ordonnances Mobile"],
+            "security": [],
+            "parameters": [_path_param("line_id")],
+            "requestBody": {
+                "required": False,
+                "content": _json({
+                    "type": "object",
+                    "properties": {
+                        "drug_name": {"type": "string"},
+                        "dosage":    {"type": "string"},
+                        "form":      {"type": "string"},
+                        "quantity":  {"type": "string"},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Ligne mise à jour",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/{prescription_id}/mobile/add_line": {
+        "post": {
+            "summary": "Ajouter une ligne (mobile)",
+            "tags": ["Ordonnances Mobile"],
+            "security": [],
+            "parameters": [_path_param("prescription_id")],
+            "requestBody": {
+                "required": False,
+                "content": _json({
+                    "type": "object",
+                    "properties": {
+                        "drug_name": {"type": "string"},
+                        "dosage":    {"type": "string"},
+                        "form":      {"type": "string"},
+                        "quantity":  {"type": "string"},
+                        "duration":  {"type": "string"},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Ligne créée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "line_id": {"type": "integer"},
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/{prescription_id}/mobile/confirm": {
+        "post": {
+            "summary": "Confirmer les lignes d'une ordonnance (mobile)",
+            "description": "Appelle action_evaluate_mobile_lines() sur l'ordonnance.",
+            "tags": ["Ordonnances Mobile"],
+            "security": [],
+            "parameters": [_path_param("prescription_id")],
+            "responses": {
+                "200": {
+                    "description": "Ordonnance confirmée",
+                    "content": _json({
+                        "type": "object",
+                        "properties": {
+                            "success": {"type": "boolean"},
+                            "results": {"type": "object"},
+                            "data":    _ref("PrescriptionMobilePayload"),
+                        },
+                    }),
+                },
+            },
+        }
+    },
+
+    "/api/prescription/line/{line_id}/mobile/alternative": {
+        "post": {
+            "summary": "Choisir un alternatif (mobile)",
+            "tags": ["Ordonnances Mobile"],
+            "security": [],
+            "parameters": [_path_param("line_id")],
+            "requestBody": {
+                "required": True,
+                "content": _json({
+                    "type": "object",
+                    "required": ["accept_alternative"],
+                    "properties": {
+                        "accept_alternative": {"type": "boolean", "example": True},
+                    },
+                }),
+            },
+            "responses": {
+                "200": {
+                    "description": "Choix enregistré",
+                    "content": _json({"type": "object", "properties": {"success": {"type": "boolean"}}}),
+                },
             },
         }
     },

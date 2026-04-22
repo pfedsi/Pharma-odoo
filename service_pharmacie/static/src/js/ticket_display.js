@@ -72,7 +72,7 @@ async function createPhysicalTicket(queueId) {
     formData.append("queue_id", String(queueId));
     formData.append("type_ticket", "physique");
 
-    const response = await fetch("/api/pharmacy/tickets/public", {
+    const response = await fetch("/api/pharmacy/tickets", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: formData.toString(),
@@ -94,11 +94,10 @@ async function createPhysicalTicket(queueId) {
     try {
         return JSON.parse(raw);
     } catch (err) {
-        console.error("JSON invalide pour /api/pharmacy/tickets/public :", raw);
+        console.error("JSON invalide pour /api/pharmacy/tickets :", raw);
         throw new Error("Réponse JSON invalide.");
     }
 }
-
 // ── Rendu des files ───────────────────────────────────────────────────
 function renderQueues(queues) {
     const container = getEl("ticket-display-queues");

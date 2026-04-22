@@ -1,98 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ═══════════════════════════════════════════
-         LISTE — Tickets
-         ═══════════════════════════════════════════ -->
+    <!-- ═══════════════════════════════════════════════════════════════
+         LISTE — Tickets de file d'attente
+         ═══════════════════════════════════════════════════════════════ -->
     <record id="view_pharmacy_ticket_list" model="ir.ui.view">
         <field name="name">pharmacy.ticket.list</field>
         <field name="model">pharmacy.ticket</field>
         <field name="arch" type="xml">
-            <list string="Tickets"
+            <list string="Tickets de file d'attente"
                   decoration-success="etat == 'termine'"
                   decoration-warning="etat == 'appele'"
                   decoration-info="etat == 'en_attente'"
                   decoration-danger="etat == 'annule'"
                   decoration-muted="active == False">
-                <field name="name"           string="N° Ticket"/>
-                <field name="queue_id"       string="File"/>
-                <field name="service_id"/>
-                <field name="type_ticket"/>
+
+                <field name="name"          string="N° Ticket"   optional="show"/>
+                <field name="queue_id"      string="File d'attente"/>
+                <field name="service_id"    string="Service"/>
+                <field name="type_ticket"   string="Type"/>
+                <field name="user_id"       string="Client"/>
+                <field name="reservation_id" string="Réservation" optional="show"/>
                 <field name="etat"
                        widget="badge"
                        decoration-success="etat == 'termine'"
                        decoration-warning="etat == 'appele'"
                        decoration-info="etat == 'en_attente'"
-                       decoration-danger="etat == 'annule'"/>
-                <field name="heure_creation" widget="datetime"/>
+                       decoration-danger="etat == 'annule'"
+                       string="État"/>
+                <field name="heure_creation" widget="datetime" string="Créé le" optional="show"/>
+
             </list>
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════
-         FORMULAIRE — Ticket
-         ═══════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FORMULAIRE — Détail d'un Ticket
+         ═══════════════════════════════════════════════════════════════ -->
     <record id="view_pharmacy_ticket_form" model="ir.ui.view">
         <field name="name">pharmacy.ticket.form</field>
         <field name="model">pharmacy.ticket</field>
         <field name="arch" type="xml">
-            <form string="Ticket">
+            <form string="Ticket de file d'attente">
+
+                <!-- ── Barre d'actions ── -->
                 <header>
                     <button name="action_appeler"
-                            string="Appeler"
+                            string="Appeler le patient"
                             type="object"
+                            icon="fa-bullhorn"
                             class="btn-primary"
                             invisible="etat != 'en_attente'"/>
+
                     <button name="action_terminer"
-                            string="Terminer"
+                            string="Marquer comme terminé"
                             type="object"
+                            icon="fa-check-circle"
                             class="btn-success"
                             invisible="etat != 'appele'"/>
+
                     <button name="action_annuler"
-                            string="Annuler"
+                            string="Annuler le ticket"
                             type="object"
+                            icon="fa-times-circle"
                             class="btn-danger"
                             invisible="etat not in ['en_attente', 'appele']"/>
-                    <field name="etat" widget="statusbar"
-                           statusbar_visible="en_attente,appele,termine"/>
+
+                    <field name="etat"
+                           widget="statusbar"
+                           statusbar_visible="en_attente,appele,termine,annule"/>
                 </header>
+
                 <sheet>
 
-                    <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                    <!-- ── Titre principal ── -->
+                    <div class="oe_title mb-3">
+                        <span class="text-muted small text-uppercase fw-bold">
+                            Ticket de file d'attente
+                        </span>
+                        <h1 class="mt-1">
+                            <field name="name" readonly="1"/>
+                        </h1>
                     </div>
 
-                    <div class="row g-3 mb-3">
+                    <div class="row g-4 mb-4">
 
+                        <!-- ── Bloc : Informations du ticket ── -->
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header bg-primary text-white py-2 px-3">
-                                    <span class="fw-bold">
-                                        <i class="fa fa-ticket me-2"/>Ticket
+                            <div class="card border shadow-sm h-100">
+                                <div class="card-header d-flex align-items-center gap-2
+                                            bg-primary bg-opacity-10 border-bottom py-2 px-3">
+                                    <i class="fa fa-ticket text-primary"/>
+                                    <span class="fw-semibold text-primary">
+                                        Informations du ticket
                                     </span>
                                 </div>
-                                <div class="card-body">
-                                    <group>
-                                        <field name="queue_id"/>
-                                        <field name="service_id" readonly="1"/>
-                                        <field name="type_ticket"/>
+                                <div class="card-body px-3 py-2">
+                                    <group col="2">
+                                        <field name="queue_id"    string="File d'attente"/>
+                                        <field name="service_id"  string="Service"   readonly="1"/>
+                                        <field name="type_ticket" string="Type"      readonly="1"/>
                                     </group>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- ── Bloc : Horodatage ── -->
                         <div class="col-md-6">
-                            <div class="card border-0 shadow-sm h-100">
-                                <div class="card-header bg-light py-2 px-3">
-                                    <span class="fw-bold text-muted">
-                                        <i class="fa fa-clock-o me-2"/>Horodatage
+                            <div class="card border shadow-sm h-100">
+                                <div class="card-header d-flex align-items-center gap-2
+                                            bg-secondary bg-opacity-10 border-bottom py-2 px-3">
+                                    <i class="fa fa-clock-o text-secondary"/>
+                                    <span class="fw-semibold text-secondary">
+                                        Horodatage
                                     </span>
                                 </div>
-                                <div class="card-body">
-                                    <group>
-                                        <field name="heure_creation" widget="datetime"/>
-                                        <field name="heure_appel"    widget="datetime"/>
-                                        <field name="heure_fin"      widget="datetime"/>
+                                <div class="card-body px-3 py-2">
+                                    <group col="2">
+                                        <field name="heure_creation"
+                                               widget="datetime"
+                                               string="Créé le"
+                                               readonly="1"/>
+                                        <field name="heure_appel"
+                                               widget="datetime"
+                                               string="Appelé le"
+                                               readonly="1"/>
+                                        <field name="heure_fin"
+                                               widget="datetime"
+                                               string="Terminé le"
+                                               readonly="1"/>
                                     </group>
                                 </div>
                             </div>
@@ -100,26 +137,48 @@
 
                     </div>
 
-                    <group string="Liens">
-                        <field name="user_id"/>
-                        <field name="reservation_id"/>
-                    </group>
+                    <!-- ── Bloc : Liens ── -->
+                    <div class="card border shadow-sm mb-3">
+                        <div class="card-header d-flex align-items-center gap-2
+                                    bg-info bg-opacity-10 border-bottom py-2 px-3">
+                            <i class="fa fa-link text-info"/>
+                            <span class="fw-semibold text-info">Associations</span>
+                        </div>
+                        <div class="card-body px-3 py-2">
+                            <group col="2">
+                                <field name="user_id"
+                                       string="Client"
+                                       readonly="1"/>
+                                <field name="reservation_id"
+                                       string="Réservation liée"
+                                       readonly="1"
+                                       invisible="type_ticket == 'physique'"/>
+                            </group>
+                        </div>
+                    </div>
 
                 </sheet>
             </form>
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════
-         ACTION
-         ═══════════════════════════════════════════ -->
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ACTION FENÊTRE — Tickets
+         ═══════════════════════════════════════════════════════════════ -->
     <record id="action_pharmacy_ticket" model="ir.actions.act_window">
         <field name="name">Tickets</field>
         <field name="res_model">pharmacy.ticket</field>
         <field name="view_mode">list,form</field>
+        <field name="context">{}</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Aucun ticket</p>
-            <p>Les tickets sont créés automatiquement lors des réservations.</p>
+            <p class="o_view_nocontent_smiling_face">
+                Aucun ticket enregistré
+            </p>
+            <p>
+                Les tickets sont générés automatiquement lors de la création
+                d'une réservation ou d'une visite physique.
+            </p>
         </field>
     </record>
 

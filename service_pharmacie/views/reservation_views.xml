@@ -2,9 +2,6 @@
 <odoo>
     <data>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             LISTE — Réservations (lecture seule, pas de création)
-             ═══════════════════════════════════════════════════════════════════ -->
         <record id="view_pharmacy_reservation_list" model="ir.ui.view">
             <field name="name">pharmacy.reservation.list</field>
             <field name="model">pharmacy.reservation</field>
@@ -15,34 +12,31 @@
                       decoration-success="statut == 'arrive'"
                       decoration-muted="statut == 'annule'"
                       decoration-info="statut == 'en_attente'">
-                    <field name="display_name"           string="Réservation"/>
-                    <field name="user_id"                string="Client"/>
-                    <field name="service_id"             string="Service"/>
-                    <field name="localisation_id"        string="Localisation"/>
+                    <field name="display_name" string="Réservation"/>
+                    <field name="user_id" string="Client"/>
+                    <field name="service_id" string="Service"/>
+                    <field name="localisation_id" string="Localisation"/>
                     <field name="date_heure_reservation" string="Créneau" widget="datetime"/>
-                    <field name="statut"                 string="Statut"/>
-                    <field name="ticket_id"              string="Ticket"/>
-                    <field name="queue_id"               string="File d'attente"/>
+                    <field name="statut" string="Statut"/>
+                    <field name="ticket_id" string="Ticket"/>
+                    <field name="queue_id" string="File d'attente"/>
                 </list>
             </field>
         </record>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             FORMULAIRE — Réservation (lecture seule, pas de création)
-             ═══════════════════════════════════════════════════════════════════ -->
         <record id="view_pharmacy_reservation_form" model="ir.ui.view">
             <field name="name">pharmacy.reservation.form</field>
             <field name="model">pharmacy.reservation</field>
             <field name="arch" type="xml">
                 <form string="Réservation" create="false" delete="false">
                     <sheet>
-
                         <div class="alert alert-success" role="alert"
                              invisible="statut != 'arrive'">
                             <i class="fa fa-check-circle me-1"/>
-                            Client arrivé — ticket attribué :
+                            Réservation confirmée — ticket attribué :
                             <field name="ticket_id" readonly="1" nolabel="1"/>
                         </div>
+
                         <div class="alert alert-warning" role="alert"
                              invisible="statut != 'annule'">
                             <i class="fa fa-ban me-1"/>
@@ -51,7 +45,7 @@
 
                         <group>
                             <group string="Réservation">
-                                <field name="user_id"    string="Client" readonly="1"/>
+                                <field name="user_id" string="Client" readonly="1"/>
                                 <field name="service_id" string="Service" readonly="1"/>
                                 <field name="date_heure_reservation"
                                        string="Créneau réservé"
@@ -63,20 +57,22 @@
                                        statusbar_visible="en_attente,arrive,annule"
                                        readonly="1"/>
                             </group>
-                            <group string="File &amp; Ticket">
-                                <field name="queue_id"  string="File d'attente" readonly="1"/>
-                                <field name="ticket_id" string="Ticket"         readonly="1"/>
+
+                            <group string="File et ticket">
+                                <field name="queue_id" string="File d'attente" readonly="1"/>
+                                <field name="ticket_id" string="Ticket" readonly="1"/>
                             </group>
                         </group>
 
                         <separator string="Localisation"/>
+
                         <group>
                             <group string="Pharmacie">
                                 <field name="localisation_id" string="Localisation" readonly="1"/>
                             </group>
-                            <group string="Coordonnées GPS (snapshot)">
-                                <field name="pharmacie_lat"    string="Latitude"      readonly="1"/>
-                                <field name="pharmacie_lon"    string="Longitude"     readonly="1"/>
+                            <group string="Coordonnées GPS">
+                                <field name="pharmacie_lat" string="Latitude" readonly="1"/>
+                                <field name="pharmacie_lon" string="Longitude" readonly="1"/>
                                 <field name="rayon_validation" string="Rayon GPS (m)" readonly="1"/>
                             </group>
                         </group>
@@ -85,8 +81,8 @@
                         <group>
                             <field name="notes" nolabel="1" readonly="1"/>
                         </group>
-
                     </sheet>
+
                     <div class="oe_chatter">
                         <field name="message_follower_ids"/>
                         <field name="message_ids"/>
@@ -95,51 +91,30 @@
             </field>
         </record>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             RECHERCHE
-             ═══════════════════════════════════════════════════════════════════ -->
         <record id="view_pharmacy_reservation_search" model="ir.ui.view">
             <field name="name">pharmacy.reservation.search</field>
             <field name="model">pharmacy.reservation</field>
             <field name="arch" type="xml">
-                <search string="Rechercher une réservation">
+                <search>
+                    <field name="user_id"/>
+                    <field name="service_id"/>
+                    <field name="localisation_id"/>
 
-                    <field name="user_id"         string="Client"/>
-                    <field name="service_id"      string="Service"/>
-                    <field name="localisation_id" string="Localisation"/>
-                    <field name="ticket_id"       string="Ticket"/>
+                    <filter name="filter_en_attente"
+                            string="En attente"
+                            domain="[('statut', '=', 'en_attente')]"/>
 
-                    <separator/>
-                    <filter string="En attente"
-                            name="filter_en_attente"
-                            domain="[('statut','=','en_attente')]"/>
-                    <filter string="Arrivés"
-                            name="filter_arrive"
-                            domain="[('statut','=','arrive')]"/>
-                    <filter string="Annulées"
-                            name="filter_annule"
-                            domain="[('statut','=','annule')]"/>
-                    <separator/>
-                    <filter string="Grouper par statut"
-                            name="group_statut"
-                            context="{'group_by': 'statut'}"/>
-                    <filter string="Grouper par service"
-                            name="group_service"
-                            context="{'group_by': 'service_id'}"/>
-                    <filter string="Grouper par client"
-                            name="group_client"
-                            context="{'group_by': 'user_id'}"/>
-                    <filter string="Grouper par date"
-                            name="group_date"
-                            context="{'group_by': 'date_heure_reservation:day'}"/>
+                    <filter name="filter_confirme"
+                            string="Confirmées"
+                            domain="[('statut', '=', 'arrive')]"/>
 
+                    <filter name="filter_annule"
+                            string="Annulées"
+                            domain="[('statut', '=', 'annule')]"/>
                 </search>
             </field>
         </record>
 
-        <!-- ═══════════════════════════════════════════════════════════════════
-             ACTION
-             ═══════════════════════════════════════════════════════════════════ -->
         <record id="action_pharmacy_reservation" model="ir.actions.act_window">
             <field name="name">Réservations</field>
             <field name="res_model">pharmacy.reservation</field>

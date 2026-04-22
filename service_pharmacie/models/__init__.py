@@ -9,3 +9,8 @@ from . import PharmacyQueueHistory
 from . import product_template
 from . import inventaire_pharmacie
 from . import rf_predictor
+from . import openai_service
+from . import prescription
+from . import prescription_line
+from . import pharmacy_mobile_order
+from . import PosOrder

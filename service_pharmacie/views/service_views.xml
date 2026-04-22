@@ -2,119 +2,157 @@
 <odoo>
     <data>
 
-        <!-- LISTE -->
         <record id="view_pharmacy_service_list" model="ir.ui.view">
             <field name="name">pharmacy.service.list</field>
             <field name="model">pharmacy.service</field>
             <field name="arch" type="xml">
                 <list string="Services"
                       decoration-muted="active == False"
-                      decoration-info="overnight == True">
-                    <field name="nom"/>
-                    <field name="type_affichage"          string="Type"/>
-                    <field name="dure_estimee_par_defaut" string="Durée (min)"/>
-                    <field name="heure_ouverture"         string="Ouverture"  widget="float_time"/>
-                    <field name="heure_fermeture"         string="Fermeture"  widget="float_time"/>
-                    <field name="overnight"               string="Nuit"       widget="boolean_toggle"/>
-                    <field name="duree_creneau"           string="Intervalle (min)"/>
-                    <field name="active"                  widget="boolean_toggle"/>
-                    <field name="warning_estimation"      invisible="1"/>
-                    <field name="moyenne_reelle_observee" readonly="1"/>
-                    <field name="warning_estimation_message"/>
+                      decoration-info="overnight == True"
+                      decoration-warning="warning_creneau == True">
+
+                    <field name="nom" string="Service"/>
+                    <field name="type_affichage" string="Type" optional="show"/>
+                    <field name="dure_estimee_par_defaut" string="Durée / client (min)" optional="show"/>
+                    <field name="multiplicateur_creneau" string="Multiplicateur" optional="show"/>
+                    <field name="duree_creneau" string="Intervalle (min)" optional="show"/>
+                    <field name="heure_ouverture" string="Ouverture" optional="show" widget="float_time"/>
+                    <field name="heure_fermeture" string="Fermeture" optional="show" widget="float_time"/>
+                    <field name="overnight" string="Nuit" optional="show" widget="boolean_toggle"/>
+                    <field name="active" string="Actif" optional="show" widget="boolean_toggle"/>
+
+                    <field name="warning_creneau" invisible="1"/>
+                    <field name="warning_estimation" invisible="1"/>
+                    <field name="warning_creneau_message" invisible="1"/>
+                    <field name="warning_estimation_message" invisible="1"/>
+                    <field name="moyenne_reelle_observee" invisible="1"/>
                 </list>
             </field>
         </record>
 
-        <!-- FORMULAIRE -->
         <record id="view_pharmacy_service_form" model="ir.ui.view">
             <field name="name">pharmacy.service.form</field>
             <field name="model">pharmacy.service</field>
             <field name="arch" type="xml">
-                <form string="Service">
+                <form string="Service pharmacie">
                     <sheet>
+
+                        <div class="alert alert-warning d-flex align-items-start gap-2 mb-0"
+                             invisible="not warning_creneau">
+                            <i class="fa fa-exclamation-triangle fa-lg mt-1 text-warning"/>
+                            <div>
+                                <strong>Risque d'encombrement</strong><br/>
+                                <field name="warning_creneau_message" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning d-flex align-items-start gap-2 mb-0"
+                             invisible="not warning_estimation">
+                            <i class="fa fa-clock-o fa-lg mt-1 text-warning"/>
+                            <div>
+                                <strong>Durée estimée à réviser</strong><br/>
+                                <field name="warning_estimation_message" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info d-flex align-items-center gap-2 mb-0"
+                             invisible="heure_fermeture >= heure_ouverture">
+                            <i class="fa fa-moon-o fa-lg text-info"/>
+                            <span>
+                                <strong>Pharmacie de nuit</strong> —
+                                l'heure de fermeture est le lendemain de l'heure d'ouverture.
+                            </span>
+                        </div>
+
+                        <field name="warning_creneau" invisible="1"/>
+                        <field name="warning_estimation" invisible="1"/>
 
                         <group>
                             <field name="nom"
                                    string="Nom du service"
-                                   placeholder="Ex : Ordonnances"/>
+                                   placeholder="Ex : Ordonnances, Vaccination…"/>
                         </group>
 
-                        <separator string="Configuration générale"/>
+                        <separator string="Configuration"/>
+
                         <group>
-                            <group string="Général">
-                                <field name="dure_estimee_par_defaut"
-                                       string="Durée estimée / client (min)"/>
+                            <group string="Paramètres généraux">
                                 <field name="type_affichage"
-                                       string="Type d'affichage"/>
+                                       string="Mode de service"
+                                       widget="radio"
+                                       options="{'horizontal': true}"/>
+                                <field name="dure_estimee_par_defaut"
+                                       string="Durée estimée (min)"/>
+                                <field name="moyenne_reelle_observee"
+                                       string="Durée réelle observée (min)"
+                                       readonly="1"
+                                       invisible="moyenne_reelle_observee == 0.0"/>
                                 <field name="active"
                                        string="Service actif"
                                        widget="boolean_toggle"/>
                             </group>
-                            <group string="Horaires par défaut">
+
+                            <group string="Horaires et créneaux">
                                 <field name="heure_ouverture"
-                                       string="De"
+                                       string="Ouverture"
                                        widget="float_time"/>
                                 <field name="heure_fermeture"
-                                       string="À"
+                                       string="Fermeture"
                                        widget="float_time"/>
-                                <field name="duree_creneau"
-                                       string="Intervalle entre réservations (min)"/>
-                                <field name="warning_estimation" invisible="1"/>
-                                <div class="alert alert-warning"
-                                     invisible="not warning_estimation">
-                                    <field name="warning_estimation_message" readonly="1"/>
-                                </div>
                                 <field name="overnight"
-                                       string="Pharmacie de nuit"
-                                       readonly="1"/>
-                            </group>
-                        </group>
+                                       string="Traversée de minuit"
+                                       readonly="1"
+                                       widget="boolean_toggle"/>
+                               <field name="multiplicateur_creneau"
+                                      string="Durée de réservation (multiple de la durée estimée)"/>
 
-                        <group string="Horaire traversant minuit détecté"
-                               invisible="heure_fermeture >= heure_ouverture">
-                            <field name="heure_ouverture"
-                                   string="Ouverture"
-                                   widget="float_time"
-                                   readonly="1"/>
-                            <field name="heure_fermeture"
-                                   string="Fermeture (lendemain)"
-                                   widget="float_time"
-                                   readonly="1"/>
+                                <field name="duree_creneau"
+                                        string="Durée totale de réservation (min)"
+                                        readonly="1"/>
+                            </group>
                         </group>
 
                         <separator string="Description"/>
                         <group>
                             <field name="description"
                                    nolabel="1"
-                                   placeholder="Décrivez ce service…"/>
+                                   placeholder="Documents requis, conditions d'accès, informations utiles…"/>
                         </group>
 
                         <notebook>
                             <page string="Horaires par jour" name="horaires">
-                                <p>
-                                    <i class="fa fa-info-circle text-info me-1"/>
-                                    Les jours non configurés utilisent les horaires par défaut.
-                                </p>
+                                <div class="alert alert-light d-flex align-items-center gap-2 mb-2">
+                                    <i class="fa fa-info-circle text-info"/>
+                                    <span>
+                                        Les jours sans horaire spécifique appliquent
+                                        les horaires généraux du service.
+                                    </span>
+                                </div>
                                 <field name="horaire_ids" nolabel="1">
                                     <list editable="bottom"
                                           decoration-info="actif == True and heure_fermeture &lt; heure_ouverture"
                                           decoration-muted="actif == False">
-                                        <field name="jour_semaine"    string="Jour"/>
-                                        <field name="actif"           string="Ouvert"          widget="boolean_toggle"/>
-                                        <field name="heure_ouverture" string="De"              widget="float_time" readonly="not actif"/>
-                                        <field name="heure_fermeture" string="À"               widget="float_time" readonly="not actif"/>
-                                        <field name="overnight"       string="Traverse minuit" readonly="1"/>
+                                        <field name="jour_semaine" string="Jour"/>
+                                        <field name="actif" string="Ouvert" widget="boolean_toggle"/>
+                                        <field name="heure_ouverture" string="De" widget="float_time" readonly="not actif"/>
+                                        <field name="heure_fermeture" string="À" widget="float_time" readonly="not actif"/>
+                                        <field name="overnight" string="Traverse minuit" readonly="1" widget="boolean_toggle"/>
                                     </list>
                                 </field>
                             </page>
 
                             <page string="File d'attente" name="queue">
-                                <p>
-                                    <i class="fa fa-users text-primary me-1"/>
-                                    La file d'attente est créée automatiquement à la création du service.
-                                </p>
+                                <div class="alert alert-light d-flex align-items-center gap-2 mb-2">
+                                    <i class="fa fa-users text-primary"/>
+                                    <span>
+                                        La file d'attente est générée automatiquement
+                                        à la création du service.
+                                    </span>
+                                </div>
                                 <group string="File d'attente associée">
-                                    <field name="queue_id" string="File d'attente" readonly="1"/>
+                                    <field name="queue_id"
+                                           string="File d'attente"
+                                           readonly="1"/>
                                 </group>
                             </page>
                         </notebook>
@@ -124,66 +162,57 @@
             </field>
         </record>
 
-        <!-- RECHERCHE -->
-        <record id="view_pharmacy_service_search" model="ir.ui.view">
+       <record id="view_pharmacy_service_search" model="ir.ui.view">
             <field name="name">pharmacy.service.search</field>
             <field name="model">pharmacy.service</field>
             <field name="arch" type="xml">
-                <search string="Rechercher un service">
-
+                <search>
                     <field name="nom"/>
-                    <field name="description"/>
 
-                    <separator/>
-                    <filter string="Actifs"
-                            name="filter_active"
-                            domain="[('active','=',True)]"/>
-                    <filter string="Archivés"
-                            name="filter_inactive"
-                            domain="[('active','=',False)]"/>
-                    <separator/>
-                    <filter string="Pharmacies de nuit"
-                            name="filter_overnight"
-                            domain="[('overnight','=',True)]"/>
-                    <separator/>
-                    <filter string="Physique"
-                            name="filter_physique"
-                            domain="[('type_affichage','=','physique')]"/>
-                    <filter string="Virtuel"
-                            name="filter_virtuel"
-                            domain="[('type_affichage','=','virtuel')]"/>
-                    <filter string="Les deux"
-                            name="filter_les_deux"
-                            domain="[('type_affichage','=','les_deux')]"/>
-                    <separator/>
-                    <filter string="Grouper par statut"
-                            name="group_active"
-                            context="{'group_by': 'active'}"/>
-                    <filter string="Grouper par nuit/jour"
-                            name="group_overnight"
-                            context="{'group_by': 'overnight'}"/>
-                    <filter string="Grouper par type"
-                            name="group_type_affichage"
-                            context="{'group_by': 'type_affichage'}"/>
+                    <filter name="filter_active"
+                            string="Actifs"
+                            domain="[('active', '=', True)]"/>
 
+                    <filter name="filter_inactive"
+                            string="Archives"
+                            domain="[('active', '=', False)]"/>
+
+                    <filter name="filter_overnight"
+                            string="Pharmacies de nuit"
+                            domain="[('overnight', '=', True)]"/>
+
+                    <filter name="filter_warning_creneau"
+                            string="Alerte encombrement"
+                            domain="[('warning_creneau', '=', True)]"/>
+
+                    <filter name="filter_physique"
+                            string="Physique"
+                            domain="[('type_affichage', '=', 'physique')]"/>
+
+                    <filter name="filter_virtuel"
+                            string="Virtuel"
+                            domain="[('type_affichage', '=', 'virtuel')]"/>
+
+                    <filter name="filter_les_deux"
+                            string="Les deux"
+                            domain="[('type_affichage', '=', 'les_deux')]"/>
                 </search>
             </field>
         </record>
 
-        <!-- ACTION -->
         <record id="action_pharmacy_service" model="ir.actions.act_window">
             <field name="name">Services</field>
             <field name="res_model">pharmacy.service</field>
             <field name="view_mode">list,form</field>
             <field name="search_view_id" ref="view_pharmacy_service_search"/>
-            <field name="context">{'active_test': False}</field>
+            <field name="context">{'search_default_filter_active': 1, 'active_test': False}</field>
             <field name="help" type="html">
                 <p class="o_view_nocontent_smiling_face">
-                    Créer votre premier service
+                    Créez votre premier service
                 </p>
                 <p>
-                    Définissez les services proposés à la pharmacie
-                    pour organiser vos files d'attente et réservations.
+                    Définissez les services proposés par la pharmacie
+                    pour organiser vos files d'attente et vos réservations clients.
                 </p>
             </field>
         </record>

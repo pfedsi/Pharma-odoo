@@ -1,172 +1,226 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ═══════════════════════════════════════════════════
-         MÉDICAMENTS — product.template
-    ════════════════════════════════════════════════════ -->
-
-    <!-- Vue liste -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VUE LISTE — Médicaments
+    ══════════════════════════════════════════════════════════════════════ -->
     <record id="view_medicament_list" model="ir.ui.view">
         <field name="name">product.template.list.medicament</field>
         <field name="model">product.template</field>
         <field name="arch" type="xml">
             <list string="Médicaments"
-                  decoration-warning="alerte_stock == True">
-                <field name="name" string="Nom"/>
-                <field name="nom_generique" string="DCI" optional="show"/>
-                <field name="dosage" string="Dosage" optional="show"/>
-                <field name="forme_galenique_id" string="Forme" optional="show"/>
-                <field name="fabricant" string="Fabricant" optional="hide"/>
-                <field name="prix_achat_tnd" string="PA (TND)"
-                       digits="[12,3]" optional="hide"/>
-                <field name="prix_vente_tnd" string="PVP (TND)"
-                       digits="[12,3]" optional="show"/>
-                <field name="necessite_ordonnance" string="Ordo." optional="hide"/>
-                <field name="quantite_stock" string="Stock"
-                       digits="[12,0]" optional="show"/>
-                <field name="alerte_stock" string="⚠" optional="show"
-                       widget="boolean_favorite"/>
+                  decoration-warning="alerte_stock == True"
+                  decoration-muted="active == False"
+                  multi_edit="1">
+
+                <field name="name"
+                       string="Désignation"
+                       class="fw-bold"/>
+
+                <field name="nom_generique"
+                       string="DCI"
+                       optional="show"/>
+
+                <field name="dosage"
+                       string="Dosage"
+                       optional="show"/>
+
+                <field name="forme_galenique_id"
+                       string="Forme"
+                       optional="show"/>
+
+                <field name="fabricant"
+                       string="Fabricant"
+                       optional="hide"/>
+
+                <field name="prix_vente_tnd"
+                       string="PVP (TND)"
+                       digits="[12,3]"
+                       optional="show"/>
+
+                <field name="quantite_stock"
+                       string="Stock"
+                       optional="show"
+                       decoration-danger="alerte_stock == True"
+                       decoration-success="alerte_stock == False"/>
+
+                <field name="alerte_stock"
+                       string="⚠ Alerte"
+                       widget="boolean_toggle"
+                       optional="show"
+                       readonly="1"/>
+
                 <field name="active" optional="hide"/>
             </list>
         </field>
     </record>
 
-    <!-- Vue kanban -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VUE KANBAN — Médicaments
+    ══════════════════════════════════════════════════════════════════════ -->
     <record id="view_medicament_kanban" model="ir.ui.view">
         <field name="name">product.template.kanban.medicament</field>
         <field name="model">product.template</field>
         <field name="arch" type="xml">
-            <kanban quick_create="false">
+            <kanban quick_create="false"
+                    class="o_kanban_small_column">
+
                 <field name="id"/>
                 <field name="name"/>
                 <field name="nom_generique"/>
                 <field name="dosage"/>
                 <field name="forme_galenique_id"/>
                 <field name="prix_vente_tnd"/>
+                <field name="quantite_stock"/>
                 <field name="alerte_stock"/>
                 <field name="image_128"/>
+
                 <templates>
-                    <t t-name="kanban-card">
-                        <div class="d-flex align-items-center gap-2 mb-2">
+                    <t t-name="card">
+
+                        <!-- En-tête : image + nom -->
+                        <div class="d-flex align-items-start gap-3 mb-3">
                             <t t-if="record.image_128.raw_value">
                                 <img t-att-src="'/web/image/product.template/' + record.id.raw_value + '/image_128'"
-                                     class="rounded"
-                                     style="width:48px;height:48px;object-fit:cover;"
+                                     class="rounded-3 border"
+                                     style="width:56px;height:56px;object-fit:cover;flex-shrink:0;"
                                      alt="Médicament"/>
                             </t>
                             <t t-else="">
-                                <div class="rounded bg-secondary d-flex align-items-center justify-content-center"
-                                     style="width:48px;height:48px;">
-                                    <i class="fa fa-pills text-white"/>
+                                <div class="rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 d-flex align-items-center justify-content-center"
+                                     style="width:56px;height:56px;flex-shrink:0;">
+                                    <i class="fa fa-medkit text-primary fs-4"/>
                                 </div>
                             </t>
-                            <strong class="o_kanban_record_title fs-6">
-                                <field name="name"/>
-                            </strong>
+
+                            <div class="overflow-hidden">
+                                <div class="fw-bold text-truncate" style="font-size:.92rem;">
+                                    <field name="name"/>
+                                </div>
+                                <div class="text-muted" style="font-size:.78rem;" t-if="record.nom_generique.raw_value">
+                                    <i class="fa fa-flask me-1"/>
+                                    <t t-esc="record.nom_generique.value"/>
+                                </div>
+                            </div>
                         </div>
-                        <div class="d-flex flex-wrap gap-1 mb-2">
-                            <span t-if="record.nom_generique.raw_value"
-                                  class="badge text-bg-secondary">
-                                <t t-esc="record.nom_generique.value"/>
-                            </span>
+
+                        <!-- Badges forme / dosage -->
+                        <div class="mb-2 d-flex flex-wrap gap-1">
                             <span t-if="record.dosage.raw_value"
-                                  class="badge text-bg-info">
+                                  class="badge rounded-pill text-bg-info">
+                                <i class="fa fa-tint me-1"/>
                                 <t t-esc="record.dosage.value"/>
                             </span>
-                        </div>
-                        <ul class="list-unstyled mb-1 small">
-                            <li t-if="record.forme_galenique_id.raw_value">
-                                <span class="text-muted">Forme :</span>
+                            <span t-if="record.forme_galenique_id.raw_value"
+                                  class="badge rounded-pill text-bg-secondary">
                                 <t t-esc="record.forme_galenique_id.value"/>
-                            </li>
-                            <li>
-                                <span class="text-muted">PVP :</span>
-                                <strong><t t-esc="record.prix_vente_tnd.value"/></strong> TND
-                            </li>
-                        </ul>
-                        <div t-if="record.alerte_stock.raw_value"
-                             class="text-danger fw-bold small mt-1">
-                            &#9888; Stock Faible
+                            </span>
                         </div>
+
+                        <hr class="my-2"/>
+
+                        <!-- Prix -->
+                        <div class="d-flex justify-content-between align-items-center small mb-1">
+                            <span class="text-muted">
+                                <i class="fa fa-tag me-1"/>PVP
+                            </span>
+                            <strong class="text-primary">
+                                <t t-esc="record.prix_vente_tnd.value"/> TND
+                            </strong>
+                        </div>
+
+                        <!-- Stock -->
+                        <div class="d-flex justify-content-between align-items-center small">
+                            <span class="text-muted">
+                                <i class="fa fa-cubes me-1"/>Stock
+                            </span>
+                            <span t-attf-class="fw-bold {{ record.alerte_stock.raw_value ? 'text-danger' : 'text-success' }}">
+                                <t t-esc="record.quantite_stock.value"/>
+                            </span>
+                        </div>
+
+                        <!-- Alerte -->
+                        <div t-if="record.alerte_stock.raw_value"
+                             class="alert alert-danger py-1 px-2 mb-0 mt-2 small d-flex align-items-center gap-1">
+                            <i class="fa fa-exclamation-triangle"/>
+                            Stock faible
+                        </div>
+
                     </t>
                 </templates>
             </kanban>
         </field>
     </record>
 
-    <!-- Vue recherche -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VUE RECHERCHE — Médicaments
+    ══════════════════════════════════════════════════════════════════════ -->
     <record id="view_medicament_search" model="ir.ui.view">
         <field name="name">product.template.search.medicament</field>
         <field name="model">product.template</field>
         <field name="arch" type="xml">
             <search string="Rechercher Médicaments">
-                <field name="name"/>
-                <field name="nom_commercial"/>
-                <field name="nom_generique"/>
-                <filter name="necessite_ordonnance"
-                        string="Sur Ordonnance"
+
+                <field name="name" string="Désignation"/>
+                <field name="nom_commercial" string="Nom Commercial"/>
+                <field name="nom_generique" string="DCI"/>
+                <field name="fabricant" string="Fabricant"/>
+
+                <separator/>
+
+                <filter name="filter_ordonnance"
+                        string="Sur ordonnance"
                         domain="[('necessite_ordonnance','=',True)]"/>
-                <filter name="parapharmaceutique"
+
+                <filter name="filter_parapharmaceutique"
                         string="Parapharmaceutique"
                         domain="[('parapharmaceutique','=',True)]"/>
-                <filter name="alerte_stock_actif"
-                        string="Stock Faible"
+
+                <filter name="filter_stock_faible"
+                        string="⚠ Stock faible"
                         domain="[('alerte_stock','=',True)]"/>
-                <filter name="archives"
+
+                <separator/>
+
+                <filter name="filter_archives"
                         string="Archivés"
                         domain="[('active','=',False)]"/>
+
+                <separator/>
+
+                <filter name="group_by_forme"
+                        string="Grouper par Forme"
+                        context="{'group_by': 'forme_galenique_id'}"/>
+
+                <filter name="group_by_fabricant"
+                        string="Grouper par Fabricant"
+                        context="{'group_by': 'fabricant'}"/>
+
             </search>
         </field>
     </record>
 
-    <!-- Héritage formulaire produit -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VUE FORMULAIRE — Médicament (hérite du form natif produit)
+    ══════════════════════════════════════════════════════════════════════ -->
     <record id="product_template_form_medicament" model="ir.ui.view">
         <field name="name">product.template.form.medicament</field>
         <field name="model">product.template</field>
         <field name="inherit_id" ref="product.product_template_form_view"/>
         <field name="arch" type="xml">
 
-            <!-- Masquer champs non pertinents pour la pharmacie -->
+            <!-- Masquer champs natifs inutiles -->
             <xpath expr="//field[@name='categ_id']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//field[@name='description_sale']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
-
-            <!-- Masquer onglets natifs non utilisés -->
             <xpath expr="//page[@name='sales']" position="attributes">
                 <attribute name="invisible">is_medicament</attribute>
             </xpath>
-            <xpath expr="//page[@name='inventory']" position="attributes">
-                <attribute name="invisible">is_medicament</attribute>
-            </xpath>
 
-            <!-- Toggle médicament avant le titre -->
-            <xpath expr="//div[hasclass('oe_title')]" position="before">
-                <div class="d-flex align-items-center mb-2">
-                    <field name="is_medicament" widget="boolean_toggle"/>
-                    <label for="is_medicament"
-                           class="ms-2 fw-bold text-primary"
-                           string="Médicament"/>
-                </div>
-            </xpath>
-
-            <xpath expr="//field[@name='name']" position="attributes">
-                <attribute name="placeholder">Nom du médicament</attribute>
-            </xpath>
-
-            <!-- Label prix dynamique -->
-            <xpath expr="//label[@for='list_price']" position="replace">
-                <label for="list_price"
-                       string="Prix de Vente Public (TND)"
-                       invisible="not is_medicament"/>
-                <label for="list_price"
-                       string="Prix de Vente"
-                       invisible="is_medicament"/>
-            </xpath>
-
-            <!-- Champs cachés nécessaires au fonctionnement -->
+            <!-- Champs cachés nécessaires -->
             <xpath expr="//sheet" position="inside">
                 <group invisible="1">
                     <field name="uom_id"/>
@@ -176,20 +230,47 @@
                 </group>
             </xpath>
 
-            <!-- Onglet Médicament -->
-            <xpath expr="//page[@name='general_information']" position="after">
-                <page string="Médicament" name="medicament_tab"
-                      invisible="not is_medicament">
+            <!-- Toggle médicament avant le titre -->
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="d-flex align-items-center gap-2 mb-3 p-2 rounded-3 bg-primary bg-opacity-10 border border-primary border-opacity-25"
+                     style="max-width:fit-content;">
+                    <field name="is_medicament" widget="boolean_toggle" nolabel="1"/>
+                    <label for="is_medicament"
+                           class="fw-bold text-primary mb-0"
+                           string="Produit Médicament"/>
+                    <span class="badge text-bg-primary ms-1" invisible="not is_medicament">Pharmacie</span>
+                </div>
+            </xpath>
 
+            <!-- Placeholder nom -->
+            <xpath expr="//field[@name='name']" position="attributes">
+                <attribute name="placeholder">Nom du médicament</attribute>
+            </xpath>
+
+            <!-- Label prix de vente conditionnel -->
+            <xpath expr="//label[@for='list_price']" position="replace">
+                <label for="list_price"
+                       string="Prix de Vente Public (TND)"
+                       invisible="not is_medicament"/>
+                <label for="list_price"
+                       string="Prix de Vente"
+                       invisible="is_medicament"/>
+            </xpath>
+
+            <!-- ── Onglet Médicament ── -->
+            <xpath expr="//page[@name='general_information']" position="after">
+                <page string="🧪 Médicament" name="medicament_tab" invisible="not is_medicament">
+
+                    <!-- Bloc identification -->
                     <group string="Identification">
                         <group>
-                            <field name="nom_commercial" placeholder="ex : Doliprane"/>
-                            <field name="nom_generique" placeholder="ex : Paracétamol"/>
-                            <field name="code_barre_pharmacie" placeholder="CIP / EAN"/>
+                            <field name="nom_commercial" placeholder="Ex : Doliprane"/>
+                            <field name="nom_generique" placeholder="Ex : Paracétamol"/>
+                            <field name="code_barre_pharmacie" placeholder="CIP / EAN13"/>
                             <field name="fabricant" placeholder="Laboratoire / Fabricant"/>
                         </group>
                         <group>
-                            <field name="dosage" placeholder="ex : 500 mg"/>
+                            <field name="dosage" placeholder="Ex : 500 mg"/>
                             <field name="forme_galenique_id"/>
                             <field name="necessite_ordonnance" widget="boolean_toggle"/>
                             <field name="parapharmaceutique" widget="boolean_toggle"/>
@@ -197,44 +278,62 @@
                         </group>
                     </group>
 
-                    <group string="Prix (TND)">
+                    <!-- Bloc tarification -->
+                    <group string="Tarification">
                         <group>
                             <field name="prix_achat_tnd"/>
                             <field name="prix_vente_tnd"/>
                             <field name="tva_taux"/>
                         </group>
+                    </group>
+
+                    <!-- Bloc inventaire avec style professionnel -->
+                    <group string="Inventaire &amp; Stock">
                         <group>
                             <field name="seuil_alerte_stock"/>
-                            <field name="quantite_stock" readonly="1"/>
-                            <field name="alerte_stock" widget="boolean_toggle" readonly="1"/>
-                            <field name="lot_count" readonly="1"/>
+                            <!-- Affichage forcé de la quantité réelle -->
+                            <field name="quantite_stock"
+                                   string="Quantité disponible"
+                                   readonly="1"
+                                   force_save="1"/>
+                            <field name="lot_count"
+                                   string="Nombre de Lots"
+                                   readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="alerte_stock"
+                                   widget="boolean_toggle"
+                                   readonly="1"
+                                   string="⚠ Alerte Stock Faible"/>
                         </group>
                     </group>
 
-                    <!-- Bouton vers inventaire natif Odoo -->
-                    <group string="Inventaire" invisible="not is_medicament">
-                        <div class="o_field_widget">
+                    <!-- Boutons actions inventaire -->
+                    <div class="o_field_widget mb-3">
+                        <div class="d-flex flex-wrap gap-2">
                             <button name="action_open_quants"
                                     type="object"
-                                    string="📦 Voir le Stock (Emplacements)"
-                                    class="btn btn-secondary btn-sm"
+                                    string="📦 Stock par emplacement"
+                                    class="btn btn-outline-primary btn-sm"
                                     invisible="not is_medicament"/>
-                           <button name="action_open_moves"
+                            <button name="action_open_moves"
                                     type="object"
-                                    string="🔄 Mouvements de Stock"
-                                    class="btn btn-secondary btn-sm ms-2"
+                                    string="🔄 Mouvements de stock"
+                                    class="btn btn-outline-secondary btn-sm"
                                     invisible="not is_medicament"/>
                             <button name="action_open_inventory_lots"
                                     type="object"
-                                    string="🧾 Voir l'Inventaire"
-                                    class="btn btn-secondary btn-sm ms-2"
+                                    string="🗂 Inventaire des lots"
+                                    class="btn btn-outline-secondary btn-sm"
                                     invisible="not is_medicament"/>
                         </div>
-                    </group>
+                    </div>
 
-                    <group string="Description / Indications">
-                        <field name="description_pharmacie" nolabel="1"
-                               placeholder="Indications thérapeutiques, contre-indications…"/>
+                    <!-- Description -->
+                    <group string="Description / Indications Thérapeutiques">
+                        <field name="description_pharmacie"
+                               nolabel="1"
+                               placeholder="Indications, contre-indications, précautions d'emploi…"/>
                     </group>
 
                 </page>
@@ -242,40 +341,58 @@
         </field>
     </record>
 
-    <!-- Action médicaments -->
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Remplacement qty_available natif par quantite_stock
+    ══════════════════════════════════════════════════════════════════════ -->
+    <record id="product_template_replace_native_qty_available" model="ir.ui.view">
+        <field name="name">product.template.replace.native.qty.available</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='qty_available']" position="replace">
+                <field name="quantite_stock"
+                       string="Quantité disponible"
+                       readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ACTION PRINCIPALE — Médicaments
+    ══════════════════════════════════════════════════════════════════════ -->
     <record id="action_medicaments_pharmacie" model="ir.actions.act_window">
         <field name="name">Médicaments</field>
         <field name="res_model">product.template</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="domain">[('is_medicament','=',True)]</field>
-        <field name="context">{
-            'default_is_medicament': True,
-            'default_type': 'consu',
-            'default_is_storable': True
-        }</field>
+        <field name="context">{'default_is_medicament': True}</field>
         <field name="search_view_id" ref="view_medicament_search"/>
-        <field name="view_ids" eval="[(5,0,0),
-            (0,0,{'view_mode':'list',   'view_id':ref('view_medicament_list')}),
-            (0,0,{'view_mode':'kanban', 'view_id':ref('view_medicament_kanban')}),
+        <field name="view_ids" eval="[
+            (5,0,0),
+            (0,0,{'view_mode':'list','view_id':ref('view_medicament_list')}),
+            (0,0,{'view_mode':'kanban','view_id':ref('view_medicament_kanban')})
         ]"/>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Aucun médicament enregistré.</p>
-            <p>Créez votre premier médicament en cliquant sur <b>Nouveau</b>.</p>
+            <p class="o_view_nocontent_smiling_face">
+                Aucun médicament enregistré.
+            </p>
+            <p>
+                Créez votre premier médicament pour démarrer la gestion du stock et de la tarification.
+            </p>
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════════════
-         FORMES GALÉNIQUES
-    ════════════════════════════════════════════════════ -->
-
+    <!-- ═══════════════════════════════════════════════════════════════════
+         FORMES GALÉNIQUES — Vues
+    ══════════════════════════════════════════════════════════════════════ -->
     <record id="view_forme_galenique_list" model="ir.ui.view">
         <field name="name">pharmacie.forme.galenique.list</field>
         <field name="model">pharmacie.forme.galenique</field>
         <field name="arch" type="xml">
             <list string="Formes Galéniques" editable="bottom">
-                <field name="code"/>
-                <field name="name"/>
-                <field name="active"/>
+                <field name="code" string="Code"/>
+                <field name="name" string="Libellé"/>
+                <field name="active" string="Actif"/>
             </list>
         </field>
     </record>

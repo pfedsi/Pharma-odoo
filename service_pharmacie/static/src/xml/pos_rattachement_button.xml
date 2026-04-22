@@ -61,6 +61,15 @@
                             </svg>
                             <span>Terminer</span>
                         </button>
+                        <button class="ratt-btn ratt-btn--scan-rx" type="button"
+        onclick="window.dispatchEvent(new CustomEvent('open-prescription-scan'))">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M3 3h10v10H3z" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M5 6h6M5 8h6M5 10h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <span>Scanner ordonnance</span>
+</button>
+
                     </div>
 
                 </div>

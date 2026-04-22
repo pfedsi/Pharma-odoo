@@ -1,6 +1,7 @@
 import logging
 
 from odoo import http
+from odoo.http import request
 
 from ..services.auth_service import AuthService
 from ..utils.http_utils import json_response, preflight_response, parse_json_body
@@ -10,13 +11,11 @@ _logger = logging.getLogger(__name__)
 
 class AuthController(http.Controller):
 
-    # ------------------------------------------------------------------
-    # Registration & session
-    # ------------------------------------------------------------------
+
 
     @http.route('/api/auth/register', type='http', auth='public', methods=['POST', 'OPTIONS'], csrf=False)
     def register(self, **kw):
-        if http.request.httprequest.method == 'OPTIONS':
+        if request.httprequest.method == 'OPTIONS':
             return preflight_response()
         try:
             result = AuthService.register(parse_json_body())
@@ -25,9 +24,9 @@ class AuthController(http.Controller):
             _logger.exception("register error")
             return json_response({'success': False, 'error': 'Internal server error'}, status=500)
 
-    @http.route('/api/auth/login', type='http', auth='none', methods=['POST', 'OPTIONS'], csrf=False)
+    @http.route('/api/auth/login', type='http', auth='public', methods=['POST', 'OPTIONS'], csrf=False)
     def login(self, **kw):
-        if http.request.httprequest.method == 'OPTIONS':
+        if request.httprequest.method == 'OPTIONS':
             return preflight_response()
         try:
             result = AuthService.login(parse_json_body())
@@ -36,9 +35,9 @@ class AuthController(http.Controller):
             _logger.exception("login error")
             return json_response({'success': False, 'error': 'Internal server error'}, status=500)
 
-    @http.route('/api/auth/logout', type='http', auth='none', methods=['POST', 'OPTIONS'], csrf=False)
+    @http.route('/api/auth/logout', type='http', auth='public', methods=['POST', 'OPTIONS'], csrf=False)
     def logout(self, **kw):
-        if http.request.httprequest.method == 'OPTIONS':
+        if request.httprequest.method == 'OPTIONS':
             return preflight_response()
         try:
             result = AuthService.logout()
@@ -47,9 +46,9 @@ class AuthController(http.Controller):
             _logger.exception("logout error")
             return json_response({'success': False, 'error': 'Internal server error'}, status=500)
 
-    @http.route('/api/auth/google', type='http', auth='none', methods=['POST', 'OPTIONS'], csrf=False)
+    @http.route('/api/auth/google', type='http', auth='public', methods=['POST', 'OPTIONS'], csrf=False)
     def google_auth(self, **kw):
-        if http.request.httprequest.method == 'OPTIONS':
+        if request.httprequest.method == 'OPTIONS':
             return preflight_response()
         try:
             result = AuthService.google_login(parse_json_body())

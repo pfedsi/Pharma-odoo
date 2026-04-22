@@ -70,7 +70,7 @@ class ServiceController(http.Controller):
     # ── 4. Créneaux disponibles ───────────────────────────────────────────────
 
     @http.route("/api/pharmacy/services/<int:service_id>/slots",
-                auth="public", methods=["GET"], csrf=False)
+                type="http", auth="public", methods=["GET"], csrf=False)
     @handle_service_errors
     def get_slots(self, service_id):
         """

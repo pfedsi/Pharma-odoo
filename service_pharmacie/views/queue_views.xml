@@ -88,7 +88,7 @@
                                            decoration-danger="etat == 'annule'"/>
                                     <field name="position" string="Position"/>
                                     <field name="heure_creation" widget="datetime"/>
-                                    <field name="priorite" widget="priority"/>
+                                    <field name="priorite"/>                    
                                 </list>
                             </field>
                         </page>

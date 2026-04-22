@@ -34,6 +34,16 @@ class PharmacyTicket(models.Model):
         [("physique", "Physique"), ("virtuel", "Virtuel")],
         default="physique", required=True,
     )
+    prescription_ids = fields.One2many(
+    "pharmacy.prescription",
+    "ticket_id",
+    string="Ordonnances"
+)
+    mobile_order_id = fields.Many2one(
+    "pharmacy.mobile.order",
+    string="Commande mobile",
+    ondelete="set null",
+)
     etat = fields.Selection(
         [
             ("en_attente", "En attente"),

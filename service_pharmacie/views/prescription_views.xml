@@ -1,0 +1,94 @@
+<odoo>
+    <record id="view_pharmacy_prescription_form" model="ir.ui.view">
+        <field name="name">pharmacy.prescription.form</field>
+        <field name="model">pharmacy.prescription</field>
+        <field name="arch" type="xml">
+            <form string="Ordonnance">
+                <header>
+                    <button name="action_upload_and_scan"
+                            string="Scanner l'ordonnance"
+                            type="object"
+                            class="btn-primary"/>
+
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,uploaded,to_review,validated,done,error"/>
+                    <button name="action_evaluate_confirmed_lines"
+        string="Vérifier disponibilité"
+        type="object"
+        class="btn-success"/>
+                </header>
+
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="source_type"/>
+                            <field name="uploaded_file" filename="uploaded_file_name"/>
+                            <field name="uploaded_file_name" invisible="1"/>
+                            <field name="attachment_id" readonly="1"/>
+                            <field name="file_name" readonly="1"/>
+                        </group>
+
+                        <group>
+                            <field name="patient_name" readonly="1"/>
+                            <field name="doctor_name" readonly="1"/>
+                            <field name="prescription_date" readonly="1"/>
+                            <field name="has_unmatched_lines" readonly="1"/>
+                            <field name="has_low_confidence" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                       <page string="Médicaments détectés">
+    <field name="line_ids">
+        <list editable="bottom">
+            <field name="is_confirmed_by_client"/>
+            <field name="raw_label"/>
+            <field name="extracted_name"/>
+            <field name="corrected_name"/>
+            <field name="dosage"/>
+            <field name="form"/>
+            <field name="quantity_text"/>
+            <field name="duration_text"/>
+            <field name="confidence"/>
+            <field name="product_id"/>
+            <field name="qty_available"/>
+            <field name="is_available"/>
+            <field name="needs_review"/>
+            <field name="evaluation_state" readonly="1"/>
+            <field name="evaluation_message" readonly="1"/>
+            <field name="alternative_product_id" readonly="1"/>
+        </list>
+    </field>
+</page>
+
+                        <page string="Résultat brut">
+                            <field name="raw_ai_result" nolabel="1" readonly="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pharmacy_prescription_tree" model="ir.ui.view">
+        <field name="name">pharmacy.prescription.list</field>
+        <field name="model">pharmacy.prescription</field>
+        <field name="arch" type="xml">
+            <list string="Ordonnances">
+                <field name="name"/>
+                <field name="source_type"/>
+                <field name="state"/>
+                <field name="patient_name"/>
+                <field name="doctor_name"/>
+                <field name="prescription_date"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_pharmacy_prescription" model="ir.actions.act_window">
+        <field name="name">Ordonnances scannées</field>
+        <field name="res_model">pharmacy.prescription</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>
