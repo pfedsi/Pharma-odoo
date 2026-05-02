@@ -78,7 +78,6 @@
                 <templates>
                     <t t-name="card">
 
-                        <!-- En-tête : image + nom -->
                         <div class="d-flex align-items-start gap-3 mb-3">
                             <t t-if="record.image_128.raw_value">
                                 <img t-att-src="'/web/image/product.template/' + record.id.raw_value + '/image_128'"
@@ -92,7 +91,6 @@
                                     <i class="fa fa-medkit text-primary fs-4"/>
                                 </div>
                             </t>
-
                             <div class="overflow-hidden">
                                 <div class="fw-bold text-truncate" style="font-size:.92rem;">
                                     <field name="name"/>
@@ -104,7 +102,6 @@
                             </div>
                         </div>
 
-                        <!-- Badges forme / dosage -->
                         <div class="mb-2 d-flex flex-wrap gap-1">
                             <span t-if="record.dosage.raw_value"
                                   class="badge rounded-pill text-bg-info">
@@ -119,27 +116,20 @@
 
                         <hr class="my-2"/>
 
-                        <!-- Prix -->
                         <div class="d-flex justify-content-between align-items-center small mb-1">
-                            <span class="text-muted">
-                                <i class="fa fa-tag me-1"/>PVP
-                            </span>
+                            <span class="text-muted"><i class="fa fa-tag me-1"/>PVP</span>
                             <strong class="text-primary">
                                 <t t-esc="record.prix_vente_tnd.value"/> TND
                             </strong>
                         </div>
 
-                        <!-- Stock -->
                         <div class="d-flex justify-content-between align-items-center small">
-                            <span class="text-muted">
-                                <i class="fa fa-cubes me-1"/>Stock
-                            </span>
+                            <span class="text-muted"><i class="fa fa-cubes me-1"/>Stock</span>
                             <span t-attf-class="fw-bold {{ record.alerte_stock.raw_value ? 'text-danger' : 'text-success' }}">
                                 <t t-esc="record.quantite_stock.value"/>
                             </span>
                         </div>
 
-                        <!-- Alerte -->
                         <div t-if="record.alerte_stock.raw_value"
                              class="alert alert-danger py-1 px-2 mb-0 mt-2 small d-flex align-items-center gap-1">
                             <i class="fa fa-exclamation-triangle"/>
@@ -161,10 +151,10 @@
         <field name="arch" type="xml">
             <search string="Rechercher Médicaments">
 
-                <field name="name" string="Désignation"/>
+                <field name="name"           string="Désignation"/>
                 <field name="nom_commercial" string="Nom Commercial"/>
-                <field name="nom_generique" string="DCI"/>
-                <field name="fabricant" string="Fabricant"/>
+                <field name="nom_generique"  string="DCI"/>
+                <field name="fabricant"      string="Fabricant"/>
 
                 <separator/>
 
@@ -201,7 +191,7 @@
     </record>
 
     <!-- ═══════════════════════════════════════════════════════════════════
-         VUE FORMULAIRE — Médicament (hérite du form natif produit)
+         VUE FORMULAIRE — Médicament
     ══════════════════════════════════════════════════════════════════════ -->
     <record id="product_template_form_medicament" model="ir.ui.view">
         <field name="name">product.template.form.medicament</field>
@@ -264,16 +254,16 @@
                     <!-- Bloc identification -->
                     <group string="Identification">
                         <group>
-                            <field name="nom_commercial" placeholder="Ex : Doliprane"/>
-                            <field name="nom_generique" placeholder="Ex : Paracétamol"/>
+                            <field name="nom_commercial"      placeholder="Ex : Doliprane"/>
+                            <field name="nom_generique"       placeholder="Ex : Paracétamol"/>
                             <field name="code_barre_pharmacie" placeholder="CIP / EAN13"/>
-                            <field name="fabricant" placeholder="Laboratoire / Fabricant"/>
+                            <field name="fabricant"           placeholder="Laboratoire / Fabricant"/>
                         </group>
                         <group>
-                            <field name="dosage" placeholder="Ex : 500 mg"/>
+                            <field name="dosage"                placeholder="Ex : 500 mg"/>
                             <field name="forme_galenique_id"/>
-                            <field name="necessite_ordonnance" widget="boolean_toggle"/>
-                            <field name="parapharmaceutique" widget="boolean_toggle"/>
+                            <field name="necessite_ordonnance"  widget="boolean_toggle"/>
+                            <field name="parapharmaceutique"    widget="boolean_toggle"/>
                             <field name="obligation_de_paiement" widget="boolean_toggle"/>
                         </group>
                     </group>
@@ -287,11 +277,10 @@
                         </group>
                     </group>
 
-                    <!-- Bloc inventaire avec style professionnel -->
+                    <!-- Bloc inventaire -->
                     <group string="Inventaire &amp; Stock">
                         <group>
                             <field name="seuil_alerte_stock"/>
-                            <!-- Affichage forcé de la quantité réelle -->
                             <field name="quantite_stock"
                                    string="Quantité disponible"
                                    readonly="1"
@@ -418,5 +407,30 @@
         <field name="res_model">pharmacie.forme.galenique</field>
         <field name="view_mode">list,form</field>
     </record>
+<!-- Masquer qty_available natif partout -->
+<record id="product_template_hide_native_qty_available" model="ir.ui.view">
+    <field name="name">product.template.hide.native.qty.available</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_form_view"/>
+    <field name="arch" type="xml">
+        <xpath expr="//field[@name='qty_available']" position="attributes">
+            <attribute name="invisible">1</attribute>
+        </xpath>
+    </field>
+</record>
 
+<!-- Afficher quantite_stock après qty_available -->
+<record id="product_template_show_custom_quantite_stock" model="ir.ui.view">
+    <field name="name">product.template.show.custom.quantite.stock</field>
+    <field name="model">product.template</field>
+    <field name="inherit_id" ref="product.product_template_form_view"/>
+    <field name="arch" type="xml">
+        <xpath expr="//field[@name='qty_available']" position="after">
+            <field name="quantite_stock"
+                   string="Quantité disponible"
+                   readonly="1"
+                   invisible="not is_medicament"/>
+        </xpath>
+    </field>
+</record>
 </odoo>

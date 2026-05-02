@@ -4,11 +4,20 @@
     "version": "19.0.1.0.0",
     "summary": "Réservations et files d'attente pharmacie",
     "category": "Healthcare",
-    "depends": ["base", "mail", "web", "point_of_sale", "product", "stock"],
+    "depends": [
+        "base",
+        "mail",
+        "web",
+        "product",
+        "uom",
+        "stock",
+        "point_of_sale",
+    ],
     "data": [
         "security/ir.model.access.csv",
 
         "data/sequence_mobile_order.xml",
+
         "views/localization_views.xml",
         "views/ticket_display.xml",
         "views/ResConfigSettings.xml",
@@ -22,9 +31,7 @@
         "views/pharmacy_queue_history.xml",
         "views/prescription_views.xml",
         "views/product_template_views.xml",
-        "views/inventaire_views.xml",
         "views/service_menu.xml",
-
         "views/mobile_order_views.xml",
 
         "data/medicament_data.xml",

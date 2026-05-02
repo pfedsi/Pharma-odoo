@@ -42,7 +42,7 @@ class PharmacyRFPredictor(models.AbstractModel):
         duree_defaut=15.0,
     ):
         model = self._load_model()
-        if not model:
+        if model is None:
             return None
 
         now = fields.Datetime.now()
@@ -67,6 +67,10 @@ class PharmacyRFPredictor(models.AbstractModel):
         }])
 
         try:
+            sample = pd.get_dummies(sample)
+
+            # aligner colonnes avec modèle
+            sample = sample.reindex(columns=model.feature_names_in_, fill_value=0)
             return float(model.predict(sample)[0])
         except Exception:
             return None

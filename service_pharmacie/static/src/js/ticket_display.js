@@ -1,6 +1,5 @@
 "use strict";
 
-
 let queuesCache = [];
 let refreshIntervalId = null;
 let isRefreshing = false;
@@ -8,9 +7,7 @@ let isCreatingTicket = false;
 const REFRESH_MS = 10000;
 
 // ── Helpers ──────────────────────────────────────────────────────────
-function getEl(id) {
-    return document.getElementById(id);
-}
+function getEl(id) { return document.getElementById(id); }
 
 function showMessage(message, type) {
     const box = getEl("ticket-display-message");
@@ -46,25 +43,29 @@ function areQueuesEqual(a, b) {
     return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/**
+ * Extrait uniquement les chiffres/lettres finaux du numéro.
+ * "File - ordonnance - 038" → "038"
+ * "A-012" → "012"
+ * "045" → "045"
+ */
+function extractNumero(raw) {
+    if (!raw) return "—";
+    // Cherche le dernier token alphanumérique (chiffres ou lettres)
+    const match = String(raw).match(/([A-Z0-9]+)\s*$/i);
+    return match ? match[1].toUpperCase() : String(raw).trim();
+}
+
 // ── API ───────────────────────────────────────────────────────────────
 async function fetchQueues() {
     const response = await fetch("/api/pharmacy/queues?type_affichage=physique", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
     });
-
     const raw = await response.text();
-
-    if (!response.ok) {
-        throw new Error("Erreur HTTP " + response.status + " : " + raw);
-    }
-
-    try {
-        return JSON.parse(raw);
-    } catch (err) {
-        console.error("Réponse non JSON pour /api/pharmacy/queues :", raw);
-        throw new Error("Réponse invalide du serveur pour les files.");
-    }
+    if (!response.ok) throw new Error("Erreur HTTP " + response.status + " : " + raw);
+    try { return JSON.parse(raw); }
+    catch { throw new Error("Réponse invalide du serveur pour les files."); }
 }
 
 async function createPhysicalTicket(queueId) {
@@ -77,27 +78,14 @@ async function createPhysicalTicket(queueId) {
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: formData.toString(),
     });
-
     const raw = await response.text();
     const contentType = response.headers.get("content-type") || "";
-
-    if (!response.ok) {
-        console.error("Erreur API ticket :", response.status, raw);
-        throw new Error("Erreur HTTP " + response.status);
-    }
-
-    if (!contentType.includes("application/json")) {
-        console.error("Réponse HTML au lieu de JSON :", raw);
-        throw new Error("Le serveur a renvoyé du HTML au lieu de JSON.");
-    }
-
-    try {
-        return JSON.parse(raw);
-    } catch (err) {
-        console.error("JSON invalide pour /api/pharmacy/tickets :", raw);
-        throw new Error("Réponse JSON invalide.");
-    }
+    if (!response.ok) throw new Error("Erreur HTTP " + response.status);
+    if (!contentType.includes("application/json")) throw new Error("Le serveur a renvoyé du HTML au lieu de JSON.");
+    try { return JSON.parse(raw); }
+    catch { throw new Error("Réponse JSON invalide."); }
 }
+
 // ── Rendu des files ───────────────────────────────────────────────────
 function renderQueues(queues) {
     const container = getEl("ticket-display-queues");
@@ -123,9 +111,7 @@ function renderQueues(queues) {
                     <strong class="queue-waiting-time">${queue.temps_attente_estime || 0} min</strong>
                 </div>
             </div>
-            <button
-                type="button"
-                class="create-ticket-btn"
+            <button type="button" class="create-ticket-btn"
                 data-queue-id="${queue.id}"
                 data-service-name="${queue.service || queue.nom || "—"}">
                 Prendre un ticket
@@ -138,13 +124,10 @@ function renderQueues(queues) {
 
 async function refreshQueuesSilently(forceRender = false) {
     if (isRefreshing || isCreatingTicket) return;
-
     isRefreshing = true;
-
     try {
         const result = await fetchQueues();
         const queues = normalizeQueuesPayload(result);
-
         if (forceRender || !areQueuesEqual(queues, queuesCache)) {
             queuesCache = queues;
             renderQueues(queues);
@@ -158,56 +141,36 @@ async function refreshQueuesSilently(forceRender = false) {
 
 function startAutoRefresh() {
     stopAutoRefresh();
-    refreshIntervalId = setInterval(() => {
-        refreshQueuesSilently(false);
-    }, REFRESH_MS);
+    refreshIntervalId = setInterval(() => refreshQueuesSilently(false), REFRESH_MS);
 }
 
 function stopAutoRefresh() {
-    if (refreshIntervalId) {
-        clearInterval(refreshIntervalId);
-        refreshIntervalId = null;
-    }
+    if (refreshIntervalId) { clearInterval(refreshIntervalId); refreshIntervalId = null; }
 }
 
-// ── Boutons créer ticket ──────────────────────────────────────────────
+// ── Boutons créer ticket (sans popup) ────────────────────────────────
 function bindCreateButtons() {
     document.querySelectorAll(".create-ticket-btn").forEach(button => {
         button.addEventListener("click", async function () {
             if (isCreatingTicket) return;
-
             hideMessage();
 
             const queueId = parseInt(this.dataset.queueId, 10);
-            const serviceName = this.dataset.serviceName || "—";
-
-            if (!queueId) {
-                showMessage("File invalide.", "error");
-                return;
-            }
-
-            const confirmed = await confirmDialog(
-                `Créer un ticket pour <strong>${serviceName}</strong> ?`
-            );
-            if (!confirmed) return;
+            if (!queueId) { showMessage("File invalide.", "error"); return; }
 
             const oldText = this.textContent;
             isCreatingTicket = true;
             stopAutoRefresh();
-
             this.disabled = true;
             this.textContent = "Création…";
 
             try {
                 const result = await createPhysicalTicket(queueId);
                 const ticket = result.ticket || result.data?.ticket;
+                if (!ticket) throw new Error("Réponse API invalide");
 
-                if (!ticket) {
-                    throw new Error("Réponse API invalide");
-                }
-
-                printTicket(ticket);
-                showMessage(`Ticket ${ticket.numero} créé avec succès.`, "success");
+                printTicketSilent(ticket);
+                showMessage(`Ticket ${extractNumero(ticket.numero)} créé avec succès.`, "success");
                 await refreshQueuesSilently(true);
 
             } catch (err) {
@@ -223,125 +186,131 @@ function bindCreateButtons() {
     });
 }
 
-// ── Modale de confirmation ────────────────────────────────────────────
-function confirmDialog(htmlMessage) {
-    return new Promise(resolve => {
-        document.getElementById("_rph-modal")?.remove();
+// ── Impression silencieuse via iframe masqué ──────────────────────────
+function printTicketSilent(ticket) {
+    const old = document.getElementById("_print-frame");
+    if (old) old.remove();
 
-        const overlay = document.createElement("div");
-        overlay.id = "_rph-modal";
-        overlay.style.cssText = `
-            position:fixed;inset:0;z-index:9999;
-            background:rgba(15,23,42,.45);
-            backdrop-filter:blur(4px);
-            display:flex;align-items:center;justify-content:center;
-            animation:_fadein .15s ease;
-        `;
+    const iframe = document.createElement("iframe");
+    iframe.id = "_print-frame";
+    iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:80mm;height:1px;border:none;visibility:hidden;";
+    document.body.appendChild(iframe);
 
-        overlay.innerHTML = `
-            <style>
-                @keyframes _fadein{from{opacity:0}to{opacity:1}}
-                @keyframes _popin{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
-                #_rph-box{
-                    background:#fff;border-radius:20px;padding:28px 28px 22px;
-                    max-width:380px;width:calc(100% - 40px);
-                    box-shadow:0 8px 32px rgba(15,23,42,.18);
-                    animation:_popin .2s cubic-bezier(.16,1,.3,1);
-                    font-family:'DM Sans',sans-serif;
-                }
-                #_rph-box p{margin:0 0 22px;font-size:15px;color:#334155;line-height:1.55;}
-                #_rph-box p strong{color:#0f172a;font-weight:700;}
-                #_rph-actions{display:flex;gap:10px;justify-content:flex-end;}
-                #_rph-cancel{padding:10px 18px;border:1px solid #e2e8f0;background:#f8fafc;color:#475569;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;}
-                #_rph-cancel:hover{background:#e2e8f0;}
-                #_rph-confirm{padding:10px 22px;background:#059669;color:#fff;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;box-shadow:0 2px 8px rgba(5,150,105,.3);}
-                #_rph-confirm:hover{background:#047857;}
-            </style>
-            <div id="_rph-box">
-                <p>${htmlMessage}</p>
-                <div id="_rph-actions">
-                    <button id="_rph-cancel">Annuler</button>
-                    <button id="_rph-confirm">Confirmer</button>
-                </div>
-            </div>
-        `;
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(buildTicketHTML(ticket));
+    doc.close();
 
-        document.body.appendChild(overlay);
-
-        const close = val => {
-            overlay.remove();
-            resolve(val);
-        };
-
-        overlay.querySelector("#_rph-confirm").addEventListener("click", () => close(true));
-        overlay.querySelector("#_rph-cancel").addEventListener("click", () => close(false));
-        overlay.addEventListener("click", e => {
-            if (e.target === overlay) close(false);
-        });
-    });
+    iframe.onload = function () {
+        setTimeout(() => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (e) {
+                console.error("Erreur impression :", e);
+            }
+            setTimeout(() => { if (iframe.parentNode) iframe.remove(); }, 5000);
+        }, 400);
+    };
 }
 
-// ── Impression ticket ─────────────────────────────────────────────────
-function printTicket(ticket) {
-    const win = window.open("", "_blank", "width=420,height=620");
-    if (!win) {
-        alert("Impossible d'ouvrir la fenêtre d'impression.");
-        return;
-    }
+// ── HTML du ticket ────────────────────────────────────────────────────
+function buildTicketHTML(ticket) {
+    const now     = ticket.heure_creation
+        || new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    const date    = new Date().toLocaleDateString("fr-FR");
 
-    win.document.write(`<!DOCTYPE html>
-<html>
+    // Numéro propre : on extrait uniquement les derniers chiffres/lettres
+    const numero  = extractNumero(ticket.numero);
+
+    // Service : on nettoie aussi si besoin (retire "File - " en début)
+    const serviceRaw = ticket.service || ticket.nom || "Service";
+    const service = serviceRaw.replace(/^file\s*[-–]\s*/i, "").trim().toUpperCase();
+
+    const etat    = ticket.etat || "En attente";
+    const attente = (ticket.temps_attente_estime != null && ticket.temps_attente_estime !== "")
+        ? ticket.temps_attente_estime + " min"
+        : "—";
+    const devant  = (ticket.nb_en_attente != null)
+        ? ticket.nb_en_attente
+        : (ticket.personnes_devant != null ? ticket.personnes_devant : "—");
+
+    const bw = [1,2,1,3,1,1,2,1,3,1,2,1,1,2,1,3,1,2,1,1,3,1,2,1,1,2,3,1,2,1];
+    const bh = [14,14,10,14,12,14,10,14,12,14,10,14,12,14,10,14,12,14,10,14,12,14,10,14,12,14,10,14,12,14];
+    const bars = bw.map((w, i) =>
+        `<span style="display:inline-block;width:${w}px;height:${bh[i]}px;background:#111;margin:0 0.5px;vertical-align:bottom;"></span>`
+    ).join("");
+
+    return `<!DOCTYPE html>
+<html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<title>Ticket ${ticket.numero || ""}</title>
+<title>Ticket ${numero}</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=DM+Mono:wght@500&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'DM Sans',sans-serif;width:72mm;margin:0 auto;padding:6mm 5mm 8mm;background:#fff;color:#0f172a;}
-  .brand{text-align:center;margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed #cbd5e1;}
-  .brand-name{font-size:18px;font-weight:700;color:#059669;letter-spacing:-.3px;}
-  .brand-sub{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;margin-top:3px;}
-  .service{text-align:center;margin:14px 0 8px;font-size:13px;font-weight:600;color:#475569;text-transform:uppercase;letter-spacing:1px;}
-  .number{text-align:center;font-family:'DM Mono',monospace;font-size:52px;font-weight:500;color:#0f172a;line-height:1;letter-spacing:-2px;margin:8px 0 14px;}
-  .rows{border-top:1px dashed #e2e8f0;padding-top:10px;display:flex;flex-direction:column;gap:7px;}
-  .row{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;}
-  .row span:first-child{color:#64748b;font-weight:500;}
-  .row span:last-child{font-weight:600;color:#0f172a;}
-  .footer{text-align:center;margin-top:16px;padding-top:10px;border-top:1px dashed #e2e8f0;font-size:10px;color:#94a3b8;line-height:1.6;}
-  @media print{body{margin:0;padding:5mm;}}
+  @page { size: 80mm auto; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    width: 72mm;
+    padding: 4mm 3.5mm 4mm;
+    background: #fff;
+    color: #111;
+    font-size: 10px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .c { text-align: center; }
+  .row { display: flex; justify-content: space-between; align-items: center; }
+  .sep-solid { border: none; border-top: 1.5px solid #111; margin: 2.5mm 0; }
+  .sep-dash  { border: none; border-top: 1px dashed #bbb; margin: 1.5mm 0; }
 </style>
 </head>
 <body>
-  <div class="brand">
-    <div class="brand-name">Q-Pharma</div>
-    <div class="brand-sub">File d'attente</div>
+
+  <!-- EN-TÊTE -->
+  <div class="c" style="padding-bottom:2.5mm;border-bottom:2px solid #111;margin-bottom:2.5mm;">
+    <div style="font-size:15px;font-weight:900;letter-spacing:5px;">Q-PHARMA TN</div>
+    <div style="font-size:6.5px;letter-spacing:3px;color:#666;margin-top:1px;">GESTION DE LA FILE D'ATTENTE</div>
   </div>
-  <div class="service">${ticket.service || "—"}</div>
-  <div class="number">${ticket.numero || "—"}</div>
-  <div class="rows">
-    <div class="row"><span>État</span><span>${ticket.etat || "—"}</span></div>
-    <div class="row"><span>Temps estimé</span><span>${ticket.temps_attente_estime || "—"} min</span></div>
-    <div class="row"><span>Créé à</span><span>${ticket.heure_creation || "—"}</span></div>
+  <!-- SERVICE -->
+  <div class="c" style="margin-bottom:2mm;">
+    <span style="background:#111;color:#fff;font-size:7px;font-weight:700;letter-spacing:2px;padding:2px 8px;display:inline-block;">${service}</span>
   </div>
-  <div class="footer">
-    Conservez ce ticket<br/>Présentez-le au guichet
+  <!-- NUMÉRO -->
+  <div class="c" style="margin-bottom:2.5mm;">
+    <div style="font-size:50px;font-weight:900;line-height:1;letter-spacing:-2px;">${numero}</div>
+    <div style="font-size:6.5px;letter-spacing:3px;color:#999;margin-top:1mm;">VOTRE NUMÉRO</div>
   </div>
-  <script>
-    window.onload = function() {
-      window.print();
-      window.onafterprint = function() { window.close(); };
-    };
-  <\/script>
+  <!-- ATTENTE EN ÉVIDENCE -->
+  <div class="row" style="border-top:1.5px solid #111;border-bottom:1.5px solid #111;padding:2mm 0;margin-bottom:2.5mm;">
+    <span style="font-size:7px;letter-spacing:1.5px;text-transform:uppercase;color:#555;">Attente estimée</span>
+    <span style="font-size:16px;font-weight:900;">${attente}</span>
+  </div>
+  <!-- DÉTAILS -->
+  <div style="margin-bottom:2.5mm;">
+    <div class="row" style="padding:1.5px 0;"><span style="font-size:7.5px;color:#777;letter-spacing:0.5px;text-transform:uppercase;">État</span><span style="font-size:8px;font-weight:700;">${etat}</span></div>
+    <hr class="sep-dash"/>
+    <div class="row" style="padding:1.5px 0;"><span style="font-size:7.5px;color:#777;letter-spacing:0.5px;text-transform:uppercase;">Personnes devant</span><span style="font-size:8px;font-weight:700;">${devant}</span></div>
+    <hr class="sep-dash"/>
+    <div class="row" style="padding:1.5px 0;"><span style="font-size:7.5px;color:#777;letter-spacing:0.5px;text-transform:uppercase;">Heure</span><span style="font-size:8px;font-weight:700;">${now}</span></div>
+    <hr class="sep-dash"/>
+    <div class="row" style="padding:1.5px 0;"><span style="font-size:7.5px;color:#777;letter-spacing:0.5px;text-transform:uppercase;">Date</span><span style="font-size:8px;font-weight:700;">${date}</span></div>
+  </div>
+  <!-- CODE-BARRE DÉCORATIF -->
+  <div class="c" style="margin:2.5mm 0 1mm;line-height:0;">${bars}</div>
+  <div class="c" style="font-size:6.5px;color:#bbb;letter-spacing:0.5px;margin-bottom:2.5mm;">Q-${numero}-${date.replace(/\//g,"")}</div>
+  <!-- PIED -->
+  <div class="c" style="border-top:1px dashed #aaa;padding-top:2mm;font-size:6.5px;letter-spacing:1px;color:#999;text-transform:uppercase;line-height:1.8;">
+    Conservez ce ticket · Présentez-le au guichet
+  </div>
 </body>
-</html>`);
-    win.document.close();
+</html>`;
 }
 
 // ── Init ─────────────────────────────────────────────────────────────
 async function startTicketDisplay() {
     hideMessage();
     showLoader();
-
     try {
         const result = await fetchQueues();
         const queues = normalizeQueuesPayload(result);

@@ -191,6 +191,17 @@
                     <setting string="Seuil minimum tickets assistant">
                         <field name="assistant_min_records"/>
                     </setting>
+                    <setting string="Réentraînement automatique Random Forest">
+                        <field name="rf_retraining_enabled"/>
+                    </setting>
+
+                    <setting string="Période des données RF">
+                        <field name="rf_retraining_days"/>
+                    </setting>
+
+                    <setting string="Minimum tickets RF">
+                        <field name="rf_retraining_min_records"/>
+                    </setting>
                     </block>
                 </app>
             </xpath>
@@ -205,4 +216,13 @@
         <field name="context">{'module': 'service_pharmacie'}</field>
     </record>
     
+    <record id="ir_cron_rf_retraining" model="ir.cron">
+        <field name="name">Réentraînement modèle Random Forest</field>
+        <field name="model_id" ref="model_pharmacy_rf_retraining"/>
+        <field name="state">code</field>
+<field name="code">model.retrain_model()</field>
+        <field name="interval_number">2</field>
+        <field name="interval_type">months</field>
+        <field name="active">True</field>
+    </record>
 </odoo>

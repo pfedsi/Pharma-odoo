@@ -14,7 +14,7 @@
                     <field name="nom" string="Service"/>
                     <field name="type_affichage" string="Type" optional="show"/>
                     <field name="dure_estimee_par_defaut" string="Durée / client (min)" optional="show"/>
-                    <field name="multiplicateur_creneau" string="Multiplicateur" optional="show"/>
+                    <field name="multiplicateur_creneau" string="Pas réservation" optional="show"/>
                     <field name="duree_creneau" string="Intervalle (min)" optional="show"/>
                     <field name="heure_ouverture" string="Ouverture" optional="show" widget="float_time"/>
                     <field name="heure_fermeture" string="Fermeture" optional="show" widget="float_time"/>
@@ -104,12 +104,14 @@
                                        readonly="1"
                                        widget="boolean_toggle"/>
                                <field name="multiplicateur_creneau"
-                                      string="Durée de réservation (multiple de la durée estimée)"/>
+                                        string="Pas entre réservations"
+                                        help="Pas utilisé pour ajuster automatiquement l’intervalle entre deux réservations virtuelles. Pas 0 = durée estimée × 2, Pas 1 = durée estimée × 3, Pas 2 = durée estimée × 4, etc."/>
 
-                                <field name="duree_creneau"
-                                        string="Durée totale de réservation (min)"
-                                        readonly="1"/>
-                            </group>
+                              <field name="duree_creneau"
+                                        string="Intervalle calculé entre deux réservations (min)"
+                                        readonly="1"
+                                        help="Intervalle réel appliqué entre deux réservations dans la file client virtuelle."/>
+                                </group>
                         </group>
 
                         <separator string="Description"/>

@@ -77,4 +77,20 @@ class ResConfigSettings(models.TransientModel):
         config_parameter="service_pharmacie.assistant_min_records",
         default=15,
     )
-    
+    rf_retraining_enabled = fields.Boolean(
+    string="Activer le réentraînement automatique",
+    config_parameter="service_pharmacie.rf_retraining_enabled",
+    default=True,
+    )
+
+    rf_retraining_days = fields.Integer(
+        string="Période des données d'entraînement (jours)",
+        config_parameter="service_pharmacie.rf_retraining_days",
+        default=60,
+    )
+
+    rf_retraining_min_records = fields.Integer(
+        string="Minimum tickets pour réentraînement",
+        config_parameter="service_pharmacie.rf_retraining_min_records",
+        default=100,
+    )

@@ -56,46 +56,48 @@ class TicketController(http.Controller):
         return ok({"tickets": tickets, "total": len(tickets)})
 
 
-    @http.route("/api/pharmacy/tickets", auth="public", methods=["POST"], csrf=False, type="http")
+    @http.route("/api/pharmacy/tickets", auth="user", methods=["POST"], csrf=False, type="http")
     @handle_service_errors
     def create_ticket(self, **post):
-            params = http.request.params
-    
+        params = http.request.params
+
+        try:
+            queue_id = int(params.get("queue_id", 0))
+        except (TypeError, ValueError):
+            queue_id = 0
+
+        if not queue_id:
+            return error("queue_id est requis.", 400)
+
+        type_ticket = params.get("type_ticket", "physique")
+        if type_ticket not in ("physique", "virtuel"):
+            return error("type_ticket doit être 'physique' ou 'virtuel'.", 400)
+
+        reservation_id = params.get("reservation_id")
+        if reservation_id:
             try:
-                queue_id = int(params.get("queue_id", 0))
+                reservation_id = int(reservation_id)
             except (TypeError, ValueError):
-                queue_id = 0
-    
-            if not queue_id:
-                return error("queue_id est requis.", 400)
-    
-            type_ticket = params.get("type_ticket", "physique")
-            if type_ticket not in ("physique", "virtuel"):
-                return error("type_ticket doit être 'physique' ou 'virtuel'.", 400)
-    
-            reservation_id = params.get("reservation_id")
-            if reservation_id:
-                try:
-                    reservation_id = int(reservation_id)
-                except (TypeError, ValueError):
-                    return error("reservation_id invalide.", 400)
-            else:
-                reservation_id = None
-    
-            # Règles métier
-            if type_ticket == "virtuel" and not reservation_id:
-                return error("reservation_id est requis pour un ticket virtuel.", 400)
-    
-            if type_ticket == "physique" and reservation_id:
-                return error("Un ticket physique ne doit pas avoir de reservation_id.", 400)
-    
-            uid = http.request.env.ref("base.public_user").id
-    
-            svc = TicketService(http.request.env)
-            ticket = svc.create_ticket(
-                queue_id=queue_id,
-                uid=uid,
-                type_ticket=type_ticket,
-                reservation_id=reservation_id,
-            )
-            return ok({"ticket": ticket})
+                return error("reservation_id invalide.", 400)
+        else:
+            reservation_id = None
+
+        if type_ticket == "virtuel" and not reservation_id:
+            return error("reservation_id est requis pour un ticket virtuel.", 400)
+
+        if type_ticket == "physique" and reservation_id:
+            return error("Un ticket physique ne doit pas avoir de reservation_id.", 400)
+
+        # ✅ FIX : utiliser l'utilisateur authentifié, pas public_user
+        uid = current_uid()
+        if not uid:
+            return error("Authentification requise.", 401)
+
+        svc = TicketService(http.request.env)
+        ticket = svc.create_ticket(
+            queue_id=queue_id,
+            uid=uid,
+            type_ticket=type_ticket,
+            reservation_id=reservation_id,
+        )
+        return ok({"ticket": ticket})

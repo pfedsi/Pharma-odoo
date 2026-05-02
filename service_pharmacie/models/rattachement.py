@@ -375,79 +375,93 @@ class PharmacyRattachement(models.Model):
                 if old_ticket.etat != "termine":
                     old_ticket.action_terminer()
                     self._create_ticket_history_trace(rattachement, old_ticket)
-                    _logger.info("Ancien ticket terminé => %s", old_ticket.name)
                 rattachement.write({"current_ticket_id": False})
 
-            # 2. Résoudre dynamiquement la file cible
-            #    En mode prioritaire : vérifie file_prioritaire_id en premier,
-            #    bascule auto si vide, retour automatique dès qu'un ticket
-            #    arrive dans la file propre.
             queue = self._resolve_target_queue(rattachement)
 
             if not queue or not queue.exists():
                 return {
-                    "success":      True,
-                    "message":      _("Aucune file active disponible."),
-                    "queue_name":   False,
+                    "success": True,
+                    "message": _("Aucune file active disponible."),
+                    "queue_name": False,
                     "poste_number": rattachement.poste_number,
-                    "ticket":       False,
+                    "ticket": False,
+                    "mobile_order_id": False,
+                    "prescription": False,
+                    "mobile_order_lines": [],
                 }
 
-            # 3. Chercher le prochain ticket
             next_ticket = self._get_next_waiting_ticket(queue)
-            _logger.info(
-                "Next ticket trouvé = %s",
-                next_ticket.name if next_ticket else "AUCUN",
-            )
 
             if not next_ticket:
                 return {
-                    "success":      True,
-                    "message":      _("Aucun ticket en attente dans la file."),
-                    "queue_name":   queue.display_name,
+                    "success": True,
+                    "message": _("Aucun ticket en attente dans la file."),
+                    "queue_name": queue.display_name,
                     "poste_number": rattachement.poste_number,
-                    "ticket":       False,
+                    "ticket": False,
+                    "mobile_order_id": False,
+                    "prescription": False,
+                    "mobile_order_lines": [],
                 }
+
+            mobile_order = False
+            prescription_payload = False
+            mobile_order_lines_payload = []
+
+            if next_ticket.reservation_id:
+                mobile_order = self.env["pharmacy.mobile.order"].sudo().search([
+                    ("reservation_id", "=", next_ticket.reservation_id.id)
+                ], limit=1, order="id desc")
+
+                if mobile_order:
+                    if mobile_order.prescription_id:
+                        prescription_payload = mobile_order.prescription_id.export_mobile_payload()
+
+                    mobile_order_lines_payload = [{
+                        "id": line.id,
+                        "name": line.name,
+                        "quantity": line.quantity,
+                        "price_unit": line.price_unit,
+                        "subtotal": line.subtotal,
+                        "source_type": line.source_type,
+                        "product_tmpl_id": line.product_tmpl_id.id if line.product_tmpl_id else False,
+                        "product_tmpl_name": line.product_tmpl_id.display_name if line.product_tmpl_id else False,
+                        "prescription_id": line.prescription_id.id if line.prescription_id else False,
+                        "prescription_line_id": line.prescription_line_id.id if line.prescription_line_id else False,
+                    } for line in mobile_order.line_ids]
 
             _logger.info("Appel ticket %s", next_ticket.name)
             next_ticket.action_appeler()
 
-            # 5. Mettre à jour le rattachement
-            #    • current_ticket_id et last_called_at → toujours mis à jour
-            #    • file_id → mis à jour pour l'affichage si la file a changé
-            #    • file_prioritaire_id → JAMAIS touché ici (mémoire permanente)
             update_vals = {
                 "current_ticket_id": next_ticket.id,
-                "last_called_at":    fields.Datetime.now(),
+                "last_called_at": fields.Datetime.now(),
             }
+
             if queue.id != rattachement.file_id.id:
                 update_vals["file_id"] = queue.id
 
             rattachement.write(update_vals)
 
-            _logger.info(
-                "SUIVANT OK => assistant=%s | file=%s | ticket=%s",
-                rattachement.assistant_id.name,
-                queue.display_name,
-                next_ticket.name,
-            )
-
             return {
-                "success":      True,
-                "message":      _("Ticket suivant appelé."),
-                "queue_name":   queue.display_name,
+                "success": True,
+                "message": _("Ticket suivant appelé."),
+                "queue_name": queue.display_name,
                 "poste_number": rattachement.poste_number,
                 "ticket": {
-                    "id":   next_ticket.id,
+                    "id": next_ticket.id,
                     "name": next_ticket.name,
                     "etat": next_ticket.etat,
                 },
+                "mobile_order_id": mobile_order.id if mobile_order else False,
+                "prescription": prescription_payload,
+                "mobile_order_lines": mobile_order_lines_payload,
             }
 
         except Exception as e:
             _logger.exception("Erreur pos_call_next_ticket: %s", e)
             raise
-
     @api.model
     def pos_finish_current_ticket(self):
         rattachement = self._get_my_active_rattachement()

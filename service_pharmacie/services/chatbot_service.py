@@ -80,9 +80,10 @@ class ChatbotService:
         if not cfg["api_key"]:
             return {"success": False, "error": "Clé OpenAI non configurée."}
 
-        products_rs = request.env["product.template"].chatbot_search_products(
-            message, limit=3
-        )
+        products_rs = request.env["product.template"].sudo().chatbot_search_products(
+        message,
+        limit=3
+    )
         stock_context = build_stock_context(products_rs)
 
         system_content = cls.CHATBOT_SYSTEM_PROMPT

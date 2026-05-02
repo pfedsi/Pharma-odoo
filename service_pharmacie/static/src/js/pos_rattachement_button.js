@@ -236,10 +236,35 @@ async function setRattachement(mode, fileId = false, serviceId = false, posteNum
 async function callNextTicket() {
     try {
         const r = await rpc("/pos/rattachement/call_next", {});
+
         window.dispatchEvent(new CustomEvent("pos-clear-current-order"));
 
         updateTicket(r?.ticket?.name || null);
         currentScannedPrescription = null;
+
+        if (r?.prescription) {
+            console.log("Prescription auto chargée =", r.prescription);
+
+            switchToCaisseTab();
+            renderPrescriptionInCaisse(r.prescription);
+
+            showPrescriptionToast(
+                "Ordonnance chargée automatiquement",
+                "success"
+            );
+        }
+if (r?.mobile_order_lines?.length) {
+    console.log("Panier mobile complet =", r.mobile_order_lines);
+
+    switchToCaisseTab();
+    renderMobileOrderLinesInCaisse(r.mobile_order_lines);
+
+    showPrescriptionToast(
+        "Panier mobile chargé automatiquement",
+        "success"
+    );
+}
+
     } catch (e) {
         console.error("[ratt] call_next:", e);
     }
@@ -584,6 +609,94 @@ function injectProductIntoCaisse(productData) {
     list.appendChild(line);
     updateManualPosTotal();
 }
+function renderMobileOrderLinesInCaisse(lines) {
+    const container = getOrderlinesContainer();
+
+    if (!container || !lines?.length) return;
+
+    let block = document.getElementById("pos-mobile-order-lines");
+    if (!block) {
+        block = document.createElement("div");
+        block.id = "pos-mobile-order-lines";
+        block.style.marginTop = "10px";
+        block.style.borderTop = "1px solid #d1d5db";
+        block.style.paddingTop = "10px";
+        container.prepend(block);
+    }
+
+    block.innerHTML = `
+        <div style="
+            background:#fff7ed;
+            border:1px solid #fdba74;
+            border-radius:12px;
+            overflow:hidden;
+        ">
+            <div style="
+                padding:10px 12px;
+                background:#fed7aa;
+                font-weight:700;
+                font-size:14px;
+                color:#7c2d12;
+                display:flex;
+                justify-content:space-between;
+                align-items:center;
+            ">
+                <span>Panier mobile</span>
+                <button id="close-mobile-cart"
+                        style="border:none;background:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px;">
+                    Fermer
+                </button>
+            </div>
+
+            <div>
+                ${lines.map((l) => `
+                    <div style="
+                        display:flex;
+                        justify-content:space-between;
+                        align-items:flex-start;
+                        gap:12px;
+                        padding:10px 12px;
+                        border-top:1px solid #fed7aa;
+                        background:#fffaf0;
+                    ">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:14px;font-weight:700;color:#111827;">
+                                ${l.name || "-"}
+                            </div>
+                            <div style="margin-top:4px;font-size:12px;color:#475569;">
+                                Source : ${l.source_type || "-"} | Qté : ${l.quantity || 1}
+                            </div>
+                            <div style="margin-top:4px;font-size:12px;color:#475569;">
+                                Prix : ${Number(l.price_unit || 0).toFixed(2)}
+                            </div>
+                        </div>
+
+                        <button class="mobile-add-to-order-btn"
+                                data-product-tmpl-id="${l.product_tmpl_id || ""}"
+                                style="
+                                    border:none;
+                                    background:${l.product_tmpl_id ? "#2563eb" : "#cbd5e1"};
+                                    color:#fff;
+                                    border-radius:8px;
+                                    padding:7px 10px;
+                                    cursor:${l.product_tmpl_id ? "pointer" : "not-allowed"};
+                                    font-size:12px;
+                                    font-weight:700;
+                                "
+                                ${l.product_tmpl_id ? "" : "disabled"}>
+                            Ajouter
+                        </button>
+                    </div>
+                `).join("")}
+            </div>
+        </div>
+    `;
+
+    document.getElementById("close-mobile-cart")?.addEventListener("click", () => {
+        block.remove();
+    });
+}
+
 
 function renderPrescriptionInCaisse(data) {
     const meds = (data && data.medications) || [];
