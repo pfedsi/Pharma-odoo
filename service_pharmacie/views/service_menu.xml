@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ══════════════════════════════════════════
-         ACTIONS URL
-    ══════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════
+         ACTIONS URL — Interfaces publiques
+    ══════════════════════════════════════════════════════════ -->
+
     <record id="action_pharmacy_display_screen" model="ir.actions.act_url">
         <field name="name">Écran d'affichage</field>
         <field name="url">/pharmacy/display</field>
@@ -16,26 +17,50 @@
         <field name="target">new</field>
     </record>
 
-    <!-- ══════════════════════════════════════════
-         ACTION Commandes mobiles
-    ══════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════
+         ACTION — Commandes mobiles
+    ══════════════════════════════════════════════════════════ -->
+
     <record id="action_pharmacy_mobile_order" model="ir.actions.act_window">
         <field name="name">Commandes mobiles</field>
         <field name="res_model">pharmacy.mobile.order</field>
         <field name="view_mode">list,form</field>
     </record>
 
-    <!-- ══════════════════════════════════════════
+    <!-- ══════════════════════════════════════════════════════════
+         ACTION — Commandes POS payées (Admin)
+    ══════════════════════════════════════════════════════════ -->
+
+    <record id="action_pos_order_paid_admin" model="ir.actions.act_window">
+        <field name="name">Commandes POS Payées</field>
+        <field name="res_model">pos.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['paid', 'done', 'invoiced'])]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune commande POS payée trouvée.
+            </p>
+            <p>
+                Les commandes apparaissent ici dès qu'elles sont réglées en caisse.
+                Vous pouvez effectuer des remboursements directement depuis cette liste.
+            </p>
+        </field>
+    </record>
+
+    <!-- ══════════════════════════════════════════════════════════
          MENU RACINE
-    ══════════════════════════════════════════ -->
+    ══════════════════════════════════════════════════════════ -->
+
     <menuitem id="menu_pharmacy_root"
               name="Pharmacie"
               sequence="10"
               web_icon="service_pharmacie,static/description/icon.png"/>
 
-    <!-- ══════════════════════════════════════════
-         MÉDICAMENTS — Catalogue & Inventaire
-    ══════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════
+         MÉDICAMENTS
+    ══════════════════════════════════════════════════════════ -->
+
     <menuitem id="menu_pharmacy_medicaments"
               name="Médicaments"
               parent="menu_pharmacy_root"
@@ -47,9 +72,10 @@
               action="action_medicaments_pharmacie"
               sequence="10"/>
 
-    <!-- ══════════════════════════════════════════
-         ACTIVITÉ — Gestion quotidienne
-    ══════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════
+         ACTIVITÉ
+    ══════════════════════════════════════════════════════════ -->
+
     <menuitem id="menu_pharmacy_activity"
               name="Activité"
               parent="menu_pharmacy_root"
@@ -79,9 +105,17 @@
               action="action_pharmacy_mobile_order"
               sequence="40"/>
 
-    <!-- ══════════════════════════════════════════
-         RÉFÉRENTIEL — Données de base
-    ══════════════════════════════════════════ -->
+    <menuitem id="menu_pharmacy_pos_orders"
+              name="Commandes POS Payées"
+              parent="menu_pharmacy_activity"
+              action="action_pos_order_paid_admin"
+              sequence="50"
+              groups="point_of_sale.group_pos_manager"/>
+
+    <!-- ══════════════════════════════════════════════════════════
+         RÉFÉRENTIEL
+    ══════════════════════════════════════════════════════════ -->
+
     <menuitem id="menu_pharmacy_referentiel"
               name="Référentiel"
               parent="menu_pharmacy_root"
@@ -93,21 +127,16 @@
               action="action_pharmacy_service"
               sequence="10"/>
 
-    <menuitem id="menu_pharmacy_rattachement"
-              name="Rattachements"
-              parent="menu_pharmacy_referentiel"
-              action="action_pharmacy_rattachement"
-              sequence="30"/>
-
     <menuitem id="menu_pharmacy_queue_history"
               name="Historique rattachements"
               parent="menu_pharmacy_referentiel"
               action="action_pharmacy_queue_history"
-              sequence="40"/>
+              sequence="20"/>
 
-    <!-- ══════════════════════════════════════════
-         BORNES — Accès interfaces publiques
-    ══════════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════════════════════════
+         BORNES ET ÉCRANS
+    ══════════════════════════════════════════════════════════ -->
+
     <menuitem id="menu_pharmacy_bornes"
               name="Bornes et écrans"
               parent="menu_pharmacy_root"
@@ -125,9 +154,10 @@
               action="action_ticket_display_screen"
               sequence="20"/>
 
-    <!-- ══════════════════════════════════════════
+    <!-- ══════════════════════════════════════════════════════════
          CONFIGURATION
-    ══════════════════════════════════════════ -->
+    ══════════════════════════════════════════════════════════ -->
+
     <menuitem id="menu_pharmacy_configuration"
               name="Configuration"
               parent="menu_pharmacy_root"

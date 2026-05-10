@@ -18,8 +18,8 @@ class StockLot(models.Model):
     state = fields.Selection(
         [
             ("disponible", "Disponible"),
-            ("faible", "Stock Faible"),
-            ("epuise", "Épuisé"),
+            ("faible",     "Stock Faible"),
+            ("epuise",     "Épuisé"),
         ],
         string="État",
         compute="_compute_state",
@@ -40,7 +40,6 @@ class StockLot(models.Model):
                 ("product_id", "=", rec.product_id.id),
                 ("location_id.usage", "=", "internal"),
             ])
-
             rec.quantite_en_stock = sum(quants.mapped("quantity"))
 
     @api.depends("quantite_en_stock", "product_id.product_tmpl_id.seuil_alerte_stock")
@@ -109,8 +108,10 @@ class StockMoveLine(models.Model):
                             product.display_name,
                         )
 
-                # Entrée stock : autoriser création automatique du lot
-                elif picking.picking_type_id.code == "incoming":
+                # Entrée stock / retour : créer un lot automatiquement
+                elif picking.picking_type_id.code in ("incoming", "outgoing"):
+                    # Pour les retours (incoming depuis un remboursement),
+                    # on crée aussi un lot pour tracer le retour
                     base_name = (
                         product.product_tmpl_id.name
                         or product.default_code
@@ -129,9 +130,8 @@ class StockMoveLine(models.Model):
                     })
 
                     vals["lot_id"] = lot.id
-
                     _logger.info(
-                        "[PHARMACIE] Lot auto créé en réception : %s pour %s",
+                        "[PHARMACIE] Lot auto créé : %s pour %s",
                         lot.name,
                         product.display_name,
                     )

@@ -1,0 +1,60 @@
+<odoo>
+  <data>
+    <!-- explicit list view definition -->
+<!--
+    <record model="ir.ui.view" id="saas_manager.list">
+      <field name="name">saas_manager list</field>
+      <field name="model">saas_manager.saas_manager</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="name"/>
+          <field name="value"/>
+          <field name="value2"/>
+        </list>
+      </field>
+    </record>
+-->
+
+    <!-- actions opening views on models -->
+<!--
+    <record model="ir.actions.act_window" id="saas_manager.action_window">
+      <field name="name">saas_manager window</field>
+      <field name="res_model">saas_manager.saas_manager</field>
+      <field name="view_mode">list,form</field>
+    </record>
+-->
+
+    <!-- server action to the one above -->
+<!--
+    <record model="ir.actions.server" id="saas_manager.action_server">
+      <field name="name">saas_manager server</field>
+      <field name="model_id" ref="model_saas_manager_saas_manager"/>
+      <field name="state">code</field>
+      <field name="code">
+        action = {
+          "type": "ir.actions.act_window",
+          "view_mode": "list,form",
+          "res_model": model._name,
+        }
+      </field>
+    </record>
+-->
+
+    <!-- Top menu item -->
+<!--
+    <menuitem name="saas_manager" id="saas_manager.menu_root"/>
+-->
+    <!-- menu categories -->
+<!--
+    <menuitem name="Menu 1" id="saas_manager.menu_1" parent="saas_manager.menu_root"/>
+    <menuitem name="Menu 2" id="saas_manager.menu_2" parent="saas_manager.menu_root"/>
+-->
+    <!-- actions -->
+<!--
+    <menuitem name="List" id="saas_manager.menu_1_list" parent="saas_manager.menu_1"
+              action="saas_manager.action_window"/>
+    <menuitem name="Server to list" id="saas_manager" parent="saas_manager.menu_2"
+              action="saas_manager.action_server"/>
+-->
+  </data>
+</odoo>

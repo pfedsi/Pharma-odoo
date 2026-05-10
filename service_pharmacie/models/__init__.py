@@ -17,3 +17,5 @@ from . import rf_retraining
 from . import stock_forecast_override
 from . import stock_lot
 from . import pos_order_stock_fix
+from . import pos_order
+from . import pos_product

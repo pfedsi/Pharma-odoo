@@ -38,6 +38,10 @@ class MobileOrderService(models.AbstractModel):
         prescription_id=None,
         prescription_line_id=None,
     ):
+        # Champs réels sur product.template (pharmacie) :
+        #   nom_commercial, prix_vente_tnd, necessite_ordonnance, parapharmaceutique
+        # FIX: list_price est le fallback standard Odoo si prix_vente_tnd vaut 0
+        # FIX: parapharmaceutique existe bien sur le modèle — pas de getattr nécessaire
         return {
             "order_id": order.id,
             "product_tmpl_id": product.id,
@@ -92,6 +96,17 @@ class MobileOrderService(models.AbstractModel):
             if not product.exists():
                 continue
 
+            # FIX: vérifie que le stock est suffisant avant de créer la ligne
+            # quantite_stock est un champ computed (store=False) sur product.template
+            stock_dispo = float(getattr(product, "quantite_stock", 0) or 0)
+            if stock_dispo <= 0:
+                _logger.warning(
+                    "Produit %s (%s) ignoré : stock nul ou indisponible.",
+                    product_id,
+                    product.nom_commercial or product.name,
+                )
+                continue
+
             vals = self._build_order_line_vals_from_product(
                 order=order,
                 product=product,
@@ -118,7 +133,10 @@ class MobileOrderService(models.AbstractModel):
 
         if mobile_order.prescription_id:
             vals = {"ticket_id": ticket.id}
-            if "reservation_id" in mobile_order.prescription_id._fields and mobile_order.reservation_id:
+            if (
+                "reservation_id" in mobile_order.prescription_id._fields
+                and mobile_order.reservation_id
+            ):
                 vals["reservation_id"] = mobile_order.reservation_id.id
             if "mobile_order_id" in mobile_order.prescription_id._fields:
                 vals["mobile_order_id"] = mobile_order.id
@@ -149,6 +167,11 @@ class MobileOrderService(models.AbstractModel):
         for line in mobile_order.line_ids:
             product_variant = line.product_tmpl_id.product_variant_id
             if not product_variant:
+                _logger.warning(
+                    "Ligne %s ignorée : pas de variante pour product_tmpl_id=%s",
+                    line.id,
+                    line.product_tmpl_id.id,
+                )
                 continue
 
             line_commands.append((0, 0, {
@@ -157,6 +180,11 @@ class MobileOrderService(models.AbstractModel):
                 "price_unit": line.price_unit,
                 "name": line.name,
             }))
+
+        if not line_commands:
+            raise ValidationError(
+                _("Aucune variante produit valide trouvée pour créer la commande POS.")
+            )
 
         order_vals = {
             "session_id": session.id,
@@ -196,10 +224,12 @@ class MobileOrderService(models.AbstractModel):
             "pos_order_id": order.pos_order_id.id if order.pos_order_id else None,
             "amount_total": order.amount_total,
             "item_count": order.item_count,
+            # FIX: service_id.nom — vérifie que service_id existe avant d'accéder à .nom
             "service": order.service_id.nom if order.service_id else None,
             "lines": [
                 {
                     "id": l.id,
+                    
                     "product_id": l.product_tmpl_id.id,
                     "name": l.name,
                     "quantity": l.quantity,
@@ -207,7 +237,9 @@ class MobileOrderService(models.AbstractModel):
                     "subtotal": l.subtotal,
                     "source_type": l.source_type,
                     "prescription_id": l.prescription_id.id if l.prescription_id else None,
-                    "prescription_line_id": l.prescription_line_id.id if l.prescription_line_id else None,
+                    "prescription_line_id": (
+                        l.prescription_line_id.id if l.prescription_line_id else None
+                    ),
                     "requires_prescription": l.requires_prescription,
                     "product_type_label": l.product_type_label,
                 }

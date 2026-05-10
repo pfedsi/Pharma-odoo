@@ -22,3 +22,5 @@ access_pharmacy_mobile_order_user,access.pharmacy.mobile.order.user,model_pharma
 access_pharmacy_mobile_order_line_user,access.pharmacy.mobile.order.line.user,model_pharmacy_mobile_order_line,base.group_user,1,1,1,0
 access_pharmacy_mobile_order_manager,access.pharmacy.mobile.order.manager,model_pharmacy_mobile_order,base.group_system,1,1,1,1
 access_pharmacy_mobile_order_line_manager,access.pharmacy.mobile.order.line.manager,model_pharmacy_mobile_order_line,base.group_system,1,1,1,1
+access_pos_refund_wizard_manager,pos.refund.wizard manager,model_pos_refund_wizard,point_of_sale.group_pos_manager,1,1,1,1
+access_pos_refund_wizard_line_manager,pos.refund.wizard.line manager,model_pos_refund_wizard_line,point_of_sale.group_pos_manager,1,1,1,1

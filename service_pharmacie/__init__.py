@@ -1,4 +1,5 @@
-from . import models, controllers,services,swagger,utils
+from . import models, controllers,services,swagger,utils,wizard
+
 
 from ..api_auth.swagger.registry import register_paths, register_schemas
 from .swagger.service_spec import SERVICE_PATHS, SERVICE_SCHEMAS

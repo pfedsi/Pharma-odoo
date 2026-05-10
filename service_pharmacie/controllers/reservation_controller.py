@@ -46,7 +46,7 @@ class ReservationController(http.Controller):
 
     # ── 2. Mes réservations ───────────────────────────────────────────────────
 
-    @http.route("/api/pharmacy/reservations/mes-reservations",
+    @http.route("/api/pharmacy/reservations/mes-reservations",  type='http', 
                 auth="user", methods=["GET"], csrf=False)
     @handle_service_errors
     def mes_reservations(self):

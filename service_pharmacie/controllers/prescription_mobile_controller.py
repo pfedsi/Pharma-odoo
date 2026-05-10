@@ -1,22 +1,43 @@
 from odoo import http
 from odoo.http import request
+from odoo.addons.api_auth.utils.http_utils import require_session
 
 
 class PrescriptionMobileController(http.Controller):
 
-    @http.route('/api/prescription/<int:prescription_id>/mobile/details', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
+    @http.route(
+        "/api/prescription/<int:prescription_id>/mobile/details",
+        type="jsonrpc",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
     def mobile_prescription_details(self, prescription_id, **payload):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         prescription = request.env["pharmacy.prescription"].sudo().browse(prescription_id)
         if not prescription.exists():
             return {"success": False, "message": "Ordonnance introuvable."}
 
         return {
             "success": True,
-            "data": prescription.export_mobile_payload()
+            "data": prescription.export_mobile_payload(),
         }
 
-    @http.route('/api/prescription/line/<int:line_id>/mobile/delete', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
+    @http.route(
+        "/api/prescription/line/<int:line_id>/mobile/delete",
+        type="jsonrpc",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
     def mobile_delete_line(self, line_id, **payload):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         line = request.env["pharmacy.prescription.line"].sudo().browse(line_id)
         if not line.exists():
             return {"success": False, "message": "Ligne introuvable."}
@@ -25,16 +46,25 @@ class PrescriptionMobileController(http.Controller):
             "is_deleted_by_client": True,
             "is_confirmed_by_client": False,
         })
-
         return {"success": True}
 
-    @http.route('/api/prescription/line/<int:line_id>/mobile/update', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
+    @http.route(
+        "/api/prescription/line/<int:line_id>/mobile/update",
+        type="jsonrpc",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
     def mobile_update_line(self, line_id, **payload):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         line = request.env["pharmacy.prescription.line"].sudo().browse(line_id)
         if not line.exists():
             return {"success": False, "message": "Ligne introuvable."}
 
-        vals = {
+        line.write({
             "corrected_name": payload.get("drug_name") or line.corrected_name or line.extracted_name,
             "dosage": payload.get("dosage", line.dosage),
             "form": payload.get("form", line.form),
@@ -42,13 +72,21 @@ class PrescriptionMobileController(http.Controller):
             "is_edited_by_client": True,
             "is_confirmed_by_client": True,
             "is_deleted_by_client": False,
-        }
-        line.write(vals)
-
+        })
         return {"success": True}
 
-    @http.route('/api/prescription/<int:prescription_id>/mobile/add_line', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
+    @http.route(
+        "/api/prescription/<int:prescription_id>/mobile/add_line",
+        type="jsonrpc",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
     def mobile_add_line(self, prescription_id, **payload):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         prescription = request.env["pharmacy.prescription"].sudo().browse(prescription_id)
         if not prescription.exists():
             return {"success": False, "message": "Ordonnance introuvable."}
@@ -67,33 +105,46 @@ class PrescriptionMobileController(http.Controller):
             "is_confirmed_by_client": True,
             "needs_review": False,
         })
-
         return {"success": True, "line_id": line.id}
 
-    @http.route('/api/prescription/<int:prescription_id>/mobile/confirm', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
+    @http.route(
+        "/api/prescription/<int:prescription_id>/mobile/confirm",
+        type="jsonrpc",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
     def mobile_confirm_prescription(self, prescription_id, **payload):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         prescription = request.env["pharmacy.prescription"].sudo().browse(prescription_id)
         if not prescription.exists():
             return {"success": False, "message": "Ordonnance introuvable."}
 
         results = prescription.sudo().action_evaluate_mobile_lines()
-
         return {
             "success": True,
             "results": results,
-            "data": prescription.export_mobile_payload()
+            "data": prescription.export_mobile_payload(),
         }
 
-    @http.route('/api/prescription/line/<int:line_id>/mobile/alternative', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
+    @http.route(
+        "/api/prescription/line/<int:line_id>/mobile/alternative",
+        type="jsonrpc",
+        auth="public",
+        methods=["POST"],
+        csrf=False,
+    )
     def mobile_choose_alternative(self, line_id, **payload):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         line = request.env["pharmacy.prescription.line"].sudo().browse(line_id)
         if not line.exists():
             return {"success": False, "message": "Ligne introuvable."}
 
-        accept = bool(payload.get("accept_alternative"))
-
-        line.write({
-            "alternative_accepted": accept
-        })
-
+        line.write({"alternative_accepted": bool(payload.get("accept_alternative"))})
         return {"success": True}

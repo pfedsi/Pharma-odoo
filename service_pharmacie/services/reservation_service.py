@@ -116,12 +116,7 @@ class ReservationService:
         if not reservation.exists():
             raise UserError(f"Réservation {reservation_id} introuvable.")
 
-        public_user = self.env.ref("base.public_user")
-
-        # Autoriser les réservations créées via le flux mobile public
-        if reservation.user_id.id == public_user.id:
-            return reservation
-
+        # ✅ Plus de bypass public_user — on vérifie toujours le propriétaire
         if reservation.user_id.id != user_id:
             raise AccessError("Accès refusé à cette réservation.")
 

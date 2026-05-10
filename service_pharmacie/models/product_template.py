@@ -30,21 +30,14 @@ class ProductTemplate(models.Model):
     )
     nom_commercial       = fields.Char(string="Nom Commercial")
     nom_generique        = fields.Char(string="DCI / Nom Générique")
-    code_barre_pharmacie = fields.Char(string="Code à Barre (CIP)", copy=False)
-    fabricant            = fields.Char(string="Fabricant / Laboratoire")
     dosage               = fields.Char(string="Dosage", help="Ex : 500 mg, 250 mg/5 ml")
-    forme_galenique_id   = fields.Many2one("pharmacie.forme.galenique", string="Forme Galénique")
+    forme_galenique      = fields.Char(string="Forme Galénique")
     description_pharmacie    = fields.Text(string="Description / Indications")
     necessite_ordonnance     = fields.Boolean(string="Nécessite une Ordonnance", default=False)
     obligation_de_paiement   = fields.Boolean(string="Obligation de Paiement", default=True)
     parapharmaceutique       = fields.Boolean(string="Parapharmaceutique", default=False)
     prix_achat_tnd = fields.Float(string="Prix d'Achat (TND)", digits=(12, 3))
     prix_vente_tnd = fields.Float(string="Prix de Vente Public (TND)", digits=(12, 3))
-    tva_taux = fields.Selection(
-        [("0", "0 %"), ("7", "7 %"), ("13", "13 %"), ("19", "19 %")],
-        string="Taux TVA Tunisie",
-        default="19",
-    )
     seuil_alerte_stock = fields.Float(
         string="Seuil d'Alerte Stock",
         default=10.0,
@@ -87,12 +80,6 @@ class ProductTemplate(models.Model):
                 vals["uom_po_id"] = unit.id
 
         return vals
-
-
-    def _force_storable_type(self):
-        # Ne pas écrire type='product' dans Odoo 19
-        # Le produit est géré par is_storable=True
-        return True
 
     def _force_storable_type(self):
         for rec in self:
@@ -139,7 +126,7 @@ class ProductTemplate(models.Model):
         if self.env.context.get("skip_pharmacie"):
             return super().write(vals)
 
-        vals = dict(vals)        
+        vals = dict(vals)
         becoming = self.env["product.template"]
         existing = self.env["product.template"]
 
@@ -182,6 +169,77 @@ class ProductTemplate(models.Model):
                         super(ProductTemplate, rec).write({"name": generated})
 
         return True
+
+
+    # ─────────────────────────────────────────────────────────────────────
+    # UNLINK — bloquer suppression si lié à une session POS ouverte
+    # ─────────────────────────────────────────────────────────────────────
+    def unlink(self):
+        """
+        Intercepte la suppression :
+        - Si le produit a des mouvements de stock ou est en session POS ouverte
+          → archive automatiquement au lieu de supprimer.
+        - Sinon → suppression normale.
+        """
+        to_archive = self.env["product.template"]
+        to_delete  = self.env["product.template"]
+
+        for rec in self:
+            if not rec.is_medicament:
+                to_delete |= rec
+                continue
+
+            variant_ids = rec.product_variant_ids.ids
+
+            # 1. Mouvements de stock existants ?
+            has_moves = bool(variant_ids) and self.env["stock.move"].sudo().search_count([
+                ("product_id", "in", variant_ids),
+            ])
+
+            # 2. Session POS ouverte utilisant ce produit ?
+            in_open_pos = bool(variant_ids) and self.env["pos.order.line"].sudo().search_count([
+                ("product_id", "in", variant_ids),
+                ("order_id.session_id.state", "in", ["opening_control", "opened"]),
+            ])
+
+            if has_moves or in_open_pos:
+                to_archive |= rec
+            else:
+                to_delete |= rec
+
+        # Archiver ceux qui ne peuvent pas être supprimés
+        if to_archive:
+            to_archive.with_context(skip_pharmacie=True).write({
+                "active": False,
+                "available_in_pos": False,
+            })
+
+        # Supprimer les autres (retrait POS préventif)
+        if to_delete:
+            to_delete.filtered("is_medicament").with_context(
+                skip_pharmacie=True
+            ).write({"available_in_pos": False})
+            return super(ProductTemplate, to_delete).unlink()
+
+        return True
+
+    def action_archive_medicament(self):
+        """Archive propre : retire du POS et desactive le produit."""
+        for rec in self:
+            rec.with_context(skip_pharmacie=True).write({
+                "active": False,
+                "available_in_pos": False,
+            })
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title":   _("Produit archiv\u00e9"),
+                "message": _("%d produit(s) archiv\u00e9(s) et retir\u00e9(s) du Point de Vente.") % len(self),
+                "type":    "success",
+                "sticky":  False,
+            },
+        }
 
     # ─────────────────────────────────────────────────────────────────────
     # COMPUTES
@@ -380,11 +438,6 @@ class ProductTemplate(models.Model):
 
     def chatbot_to_dict(self, qty=1):
         self.ensure_one()
-        prix_ttc = round(
-            float(self.prix_vente_tnd or 0.0)
-            * (1 + float(self.tva_taux or "0") / 100.0),
-            3,
-        )
         return {
             "product_id":           self.id,
             "nom":                  self.nom_commercial or self.name,
@@ -392,7 +445,6 @@ class ProductTemplate(models.Model):
             "disponible":           (self.quantite_stock or 0) > 0,
             "quantite_stock":       int(self.quantite_stock or 0),
             "necessite_ordonnance": self.necessite_ordonnance,
-            "prix_ttc":             prix_ttc,
+            "prix_ttc":             round(float(self.prix_vente_tnd or 0.0), 3),
             "quantite":             qty,
         }
-

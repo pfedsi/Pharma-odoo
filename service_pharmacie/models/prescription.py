@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import json
@@ -43,7 +44,7 @@ class PharmacyPrescription(models.Model):
     line_ids = fields.One2many(
         "pharmacy.prescription.line",
         "prescription_id",
-        string="Lignes ordonnance"
+        string="Lignes ordonnance",
     )
 
     ticket_id = fields.Many2one("pharmacy.ticket")
@@ -52,17 +53,22 @@ class PharmacyPrescription(models.Model):
 
     has_unmatched_lines = fields.Boolean(compute="_compute_flags")
     has_low_confidence = fields.Boolean(compute="_compute_flags")
+
     mobile_order_id = fields.Many2one(
         "pharmacy.mobile.order",
         string="Commande mobile",
         ondelete="set null",
     )
-
     reservation_id = fields.Many2one(
         "pharmacy.reservation",
         string="Réservation",
         ondelete="set null",
     )
+
+    # ─────────────────────────────────────────────────────────────────────
+    # COMPUTES
+    # ─────────────────────────────────────────────────────────────────────
+
     @api.depends("line_ids.product_id", "line_ids.confidence", "line_ids.needs_review")
     def _compute_flags(self):
         for rec in self:
@@ -73,14 +79,26 @@ class PharmacyPrescription(models.Model):
         for rec in self:
             for line in rec.line_ids:
                 product_tmpl = line.product_id.product_tmpl_id if line.product_id else False
-                qty = product_tmpl.quantite_stock if product_tmpl else 0.0
+                qty = float(product_tmpl.quantite_stock if product_tmpl else 0.0)
+                line.write({
+                    "qty_available": qty,
+                    "is_available": qty > 0,
+                    "is_partial": False,
+                })
 
-                line.qty_available = qty
-                line.is_available = qty > 0
-                line.is_partial = False
+    # ─────────────────────────────────────────────────────────────────────
+    # CRUD HELPERS
+    # ─────────────────────────────────────────────────────────────────────
 
     @api.model
-    def create_from_attachment(self, attachment, source_type="virtual", ticket_id=None, partner_id=None , pos_order_id=None):
+    def create_from_attachment(
+        self,
+        attachment,
+        source_type="virtual",
+        ticket_id=None,
+        partner_id=None,
+        pos_order_id=None,
+    ):
         rec = self.create({
             "attachment_id": attachment.id,
             "source_type": source_type,
@@ -129,6 +147,10 @@ class PharmacyPrescription(models.Model):
                 rec.action_save_attachment()
             rec.action_scan()
 
+    # ─────────────────────────────────────────────────────────────────────
+    # NORMALISATION & MATCHING
+    # ─────────────────────────────────────────────────────────────────────
+
     @api.model
     def _normalize_text(self, text):
         text = (text or "").strip().lower()
@@ -144,32 +166,26 @@ class PharmacyPrescription(models.Model):
         if not normalized_search:
             return False
 
-        products = ProductTemplate.search([
-            ("is_medicament", "=", True),
-        ])
-
-        _logger.info("Recherche produit pour: %s", search_name)
-        _logger.info("Nom normalisé: %s", normalized_search)
-        _logger.info("Total produits trouvés en base: %s", len(products))
+        products = ProductTemplate.search([("is_medicament", "=", True)])
+        _logger.info(
+            "Recherche produit pour: %s (normalisé: %s) — %d produits en base",
+            search_name, normalized_search, len(products),
+        )
 
         exact_match = False
         partial_match = False
 
         for p in products:
-            values_to_test = [
-                p.name or "",
-                p.nom_generique or "",
-                p.nom_commercial or "",
+            candidates = [
+                self._normalize_text(p.name or ""),
+                self._normalize_text(p.nom_generique or ""),
+                self._normalize_text(p.nom_commercial or ""),
             ]
-
-            normalized_values = [self._normalize_text(v) for v in values_to_test if v]
-
-            for candidate in normalized_values:
-                if normalized_search == candidate:
+            for candidate in candidates:
+                if candidate and normalized_search == candidate:
                     _logger.info("MATCH EXACT: %s", p.display_name)
                     exact_match = p
                     break
-
             if exact_match:
                 break
 
@@ -177,31 +193,109 @@ class PharmacyPrescription(models.Model):
             return exact_match
 
         for p in products:
-            values_to_test = [
-                p.name or "",
-                p.nom_generique or "",
-                p.nom_commercial or "",
+            candidates = [
+                self._normalize_text(p.name or ""),
+                self._normalize_text(p.nom_generique or ""),
+                self._normalize_text(p.nom_commercial or ""),
             ]
-
-            normalized_values = [self._normalize_text(v) for v in values_to_test if v]
-
-            for candidate in normalized_values:
-                if normalized_search in candidate or candidate in normalized_search:
+            for candidate in candidates:
+                if candidate and (
+                    normalized_search in candidate or candidate in normalized_search
+                ):
                     _logger.info("MATCH PARTIEL: %s", p.display_name)
                     partial_match = p
                     break
-
             if partial_match:
                 break
 
         return partial_match or False
+
+    def _match_products(self):
+        ProductTemplate = self.env["product.template"].sudo()
+
+        for rec in self:
+            for line in rec.line_ids:
+                search_name = (line.corrected_name or line.extracted_name or "").strip()
+                normalized_search = rec._normalize_text(search_name)
+
+                _logger.info(
+                    "==== MATCH DEBUG ==== OCR: %s | normalisé: %s",
+                    search_name, normalized_search,
+                )
+
+                if not normalized_search:
+                    line.write({"product_id": False, "needs_review": True})
+                    continue
+
+                products = ProductTemplate.search([("is_medicament", "=", True)])
+                _logger.info("Total produits médicaments en base: %d", len(products))
+
+                matched_product = False
+                best_score = 0
+
+                for p in products:
+                    candidates = [
+                        self._normalize_text(p.name or ""),
+                        self._normalize_text(p.nom_generique or ""),
+                        self._normalize_text(p.nom_commercial or ""),
+                    ]
+                    for candidate in candidates:
+                        if not candidate:
+                            continue
+                        if normalized_search == candidate:
+                            matched_product = p
+                            best_score = 100
+                            _logger.info("MATCH EXACT sur %s", candidate)
+                            break
+                        if normalized_search in candidate and 80 > best_score:
+                            matched_product = p
+                            best_score = 80
+                            _logger.info("MATCH PARTIEL sur %s", candidate)
+                        elif candidate in normalized_search and 70 > best_score:
+                            matched_product = p
+                            best_score = 70
+                            _logger.info("MATCH INVERSE sur %s", candidate)
+                    if best_score == 100:
+                        break
+
+                if not matched_product:
+                    _logger.warning("Aucun match pour: %s", search_name)
+                    line.write({"product_id": False, "needs_review": True})
+                    continue
+
+                product_variant = matched_product.product_variant_id
+                line.write({
+                    "product_id": product_variant.id if product_variant else False,
+                    "needs_review": not bool(product_variant),
+                })
+                _logger.info(
+                    "Produit associé: %s | variant_id: %s",
+                    matched_product.display_name,
+                    product_variant.id if product_variant else False,
+                )
+
+    # ─────────────────────────────────────────────────────────────────────
+    # SCAN OCR
+    # ─────────────────────────────────────────────────────────────────────
 
     def action_scan(self):
         for rec in self:
             if not rec.attachment_id:
                 raise UserError(_("Aucune pièce jointe."))
 
-            result = self.env["pharmacy.openai.service"].extract_prescription(rec.attachment_id)
+            try:
+                result = self.env["pharmacy.openai.service"].extract_prescription(
+                    rec.attachment_id
+                )
+                _logger.info("OpenAI result: %s", result)
+            except Exception as e:
+                _logger.error("OpenAI FAILED: %s", e, exc_info=True)
+                result = {
+                    "medications": [],
+                    "patient_name": "",
+                    "doctor_name": "",
+                    "prescription_date": "",
+                }
 
             rec.raw_ai_result = json.dumps(result, ensure_ascii=False, indent=2)
             rec.patient_name = result.get("patient_name", "")
@@ -227,37 +321,9 @@ class PharmacyPrescription(models.Model):
             rec._compute_stock()
             rec.state = "to_review"
 
-    def export_client_payload(self):
-        self.ensure_one()
-        return {
-            "prescription_id": self.id,
-            "status": self.state,
-            "patient_name": self.patient_name,
-            "medications": [
-                {
-                    "line_id": l.id,
-                    "name": l.corrected_name or l.extracted_name,
-                    "raw_label": l.raw_label,
-                    "dosage": l.dosage,
-                    "form": l.form,
-                    "quantity": l.quantity_text,
-                    "duration": l.duration_text,
-                    "confidence": l.confidence,
-                    "matched_product_id": l.product_id.id if l.product_id else None,
-                    "matched_product_name": l.product_id.display_name if l.product_id else None,
-                    "available": l.is_available,
-                    "available_qty": l.qty_available,
-                    "needs_review": l.needs_review,
-                }
-                for l in self.line_ids
-            ],
-            "summary": {
-                "total_lines": len(self.line_ids),
-                "available_count": len(self.line_ids.filtered(lambda x: x.is_available)),
-                "unavailable_count": len(self.line_ids.filtered(lambda x: not x.is_available)),
-                "review_required": any(self.line_ids.mapped("needs_review")),
-            }
-        }
+    # ─────────────────────────────────────────────────────────────────────
+    # ÉVALUATION DISPONIBILITÉ
+    # ─────────────────────────────────────────────────────────────────────
 
     def _find_equivalent_product(self, product_tmpl):
         self.ensure_one()
@@ -267,12 +333,12 @@ class PharmacyPrescription(models.Model):
             ("is_medicament", "=", True),
         ]
 
-        if product_tmpl.forme_galenique_id:
-            domain.append(("forme_galenique_id", "=", product_tmpl.forme_galenique_id.id))
+        if product_tmpl.forme_galenique:
+            domain.append(("forme_galenique", "ilike", product_tmpl.forme_galenique))
 
         candidates = self.env["product.template"].search(domain)
-
         available_candidates = candidates.filtered(lambda p: (p.quantite_stock or 0) > 0)
+
         if not available_candidates:
             return False
 
@@ -332,7 +398,10 @@ class PharmacyPrescription(models.Model):
         if requires_rx:
             return {
                 "state": "out_of_stock_rx_required",
-                "message": "Ce médicament est hors stock. Il nécessite une ordonnance. Veuillez consulter votre médecin pour une alternative.",
+                "message": (
+                    "Ce médicament est hors stock. Il nécessite une ordonnance. "
+                    "Veuillez consulter votre médecin pour une alternative."
+                ),
                 "product_name": product.display_name,
                 "requires_prescription": True,
                 "available_qty": 0,
@@ -344,7 +413,10 @@ class PharmacyPrescription(models.Model):
         if alternative:
             return {
                 "state": "out_of_stock_with_alternative",
-                "message": "Ce médicament est hors stock. Une alternative disponible en pharmacie vous est proposée.",
+                "message": (
+                    "Ce médicament est hors stock. "
+                    "Une alternative disponible en pharmacie vous est proposée."
+                ),
                 "product_name": product.display_name,
                 "requires_prescription": False,
                 "available_qty": 0,
@@ -353,7 +425,7 @@ class PharmacyPrescription(models.Model):
                     "name": alternative.display_name,
                     "generic_name": alternative.nom_generique,
                     "dosage": alternative.dosage,
-                    "form": alternative.forme_galenique_id.name if alternative.forme_galenique_id else "",
+                    "form": alternative.forme_galenique or "",
                     "stock_qty": alternative.quantite_stock,
                 },
             }
@@ -371,110 +443,34 @@ class PharmacyPrescription(models.Model):
         _logger.info("==== CLICK VERIFIER DISPONIBILITE ====")
         self.ensure_one()
 
-        # Refaire le matching avant l'évaluation
         self._match_products()
         self._compute_stock()
 
         for line in self.line_ids:
             _logger.info(
                 "Line: %s | corrected_name: %s | product_id: %s",
-                line.extracted_name,
-                line.corrected_name,
-                line.product_id,
+                line.extracted_name, line.corrected_name, line.product_id,
             )
 
         for line in self.line_ids.filtered(lambda l: l.is_confirmed_by_client):
             result = self._evaluate_confirmed_medication(line)
             _logger.info("Result for %s: %s", line.extracted_name, result)
 
-            line.evaluation_state = result.get("state")
-            line.evaluation_message = result.get("message")
-
             alt = result.get("alternative") or {}
-            line.alternative_product_id = alt.get("id") if alt else False
+            line.write({
+                "evaluation_state": result.get("state"),
+                "evaluation_message": result.get("message"),
+                "alternative_product_id": alt.get("id") if alt else False,
+            })
 
         self.state = "validated"
-    def _match_products(self):
-        ProductTemplate = self.env["product.template"].sudo()
 
-        for rec in self:
-            for line in rec.line_ids:
-                search_name = (line.corrected_name or line.extracted_name or "").strip()
-                normalized_search = rec._normalize_text(search_name)
-
-                _logger.info("==== MATCH DEBUG ====")
-                _logger.info("OCR NAME: %s", search_name)
-                _logger.info("OCR NAME NORMALIZED: %s", normalized_search)
-
-                if not normalized_search:
-                    _logger.info("-> Aucun nom trouvé")
-                    line.product_id = False
-                    line.needs_review = True
-                    continue
-
-                products = ProductTemplate.search([
-                    ("is_medicament", "=", True),
-                ])
-
-                _logger.info("Total produits médicaments trouvés en base: %s", len(products))
-
-                matched_product = False
-                best_score = 0
-
-                for p in products:
-                    candidates = [
-                        p.name or "",
-                        p.nom_generique or "",
-                        p.nom_commercial or "",
-                    ]
-
-                    for candidate in candidates:
-                        normalized_candidate = rec._normalize_text(candidate)
-
-                        if not normalized_candidate:
-                            continue
-
-                        if normalized_search == normalized_candidate:
-                            matched_product = p
-                            best_score = 100
-                            _logger.info("MATCH EXACT sur %s", candidate)
-                            break
-
-                        if normalized_search in normalized_candidate:
-                            score = 80
-                            if score > best_score:
-                                matched_product = p
-                                best_score = score
-                                _logger.info("MATCH PARTIEL sur %s", candidate)
-
-                        elif normalized_candidate in normalized_search:
-                            score = 70
-                            if score > best_score:
-                                matched_product = p
-                                best_score = score
-                                _logger.info("MATCH INVERSE sur %s", candidate)
-
-                    if best_score == 100:
-                        break
-
-                if not matched_product:
-                    _logger.warning("Aucun match pour: %s", search_name)
-                    line.product_id = False
-                    line.needs_review = True
-                    continue
-
-                product = matched_product.product_variant_id
-                line.product_id = product.id if product else False
-                line.needs_review = not bool(product)
-
-                _logger.info(
-                    "Produit associé final: %s | variant_id: %s",
-                    matched_product.display_name,
-                    product.id if product else False,
-                )
     def _get_active_client_lines(self):
         self.ensure_one()
-        return self.line_ids.filtered(lambda l: not l.is_deleted_by_client and l.is_confirmed_by_client)
+        return self.line_ids.filtered(
+            lambda l: not l.is_deleted_by_client and l.is_confirmed_by_client
+        )
+
     def action_evaluate_mobile_lines(self):
         self.ensure_one()
 
@@ -485,21 +481,141 @@ class PharmacyPrescription(models.Model):
         for line in self._get_active_client_lines():
             result = self._evaluate_confirmed_medication(line)
 
-            line.evaluation_state = result.get("state")
-            line.evaluation_message = result.get("message")
-
             alt = result.get("alternative") or {}
-            line.alternative_product_id = alt.get("id") if alt else False
+            line.write({
+                "evaluation_state": result.get("state"),
+                "evaluation_message": result.get("message"),
+                "alternative_product_id": alt.get("id") if alt else False,
+            })
 
             results.append({
                 "line_id": line.id,
-                "name": line.corrected_name or line.extracted_name,
+                "requested_name": line.corrected_name or line.extracted_name,
                 **result,
             })
 
         return results
+
+    # ─────────────────────────────────────────────────────────────────────
+    # HELPERS SÉRIALISATION
+    # ─────────────────────────────────────────────────────────────────────
+
+    def _get_base_url(self):
+        return self.env["ir.config_parameter"].sudo().get_param(
+            "web.base.url", default="https://demopharma.eprswarm.com"
+        )
+
+    def _serialize_line(self, line, base_url=""):
+        """
+        FIX CRITIQUE :
+        - product_id    → product.product.id  (variante) — utilisé par le POS
+        - product_tmpl_id → product.template.id — utilisé pour image/prix mobile
+        Les deux IDs sont désormais renvoyés séparément.
+        """
+        # ── Variante (product.product) ─────────────────────────────────────
+        product_variant = line.product_id if line.product_id else False
+        # ── Template (product.template) ────────────────────────────────────
+        product_tmpl = product_variant.product_tmpl_id if product_variant else False
+
+        # ── Prix ──────────────────────────────────────────────────────────
+        prix_ttc = 0.0
+        if product_tmpl:
+            prix_ttc = float(
+                product_tmpl.prix_vente_tnd or product_tmpl.list_price or 0.0
+            )
+
+        # ── Image URL (toujours basée sur le template) ────────────────────
+        image_url = ""
+        if product_tmpl:
+            unique = (
+                int(product_tmpl.write_date.timestamp() * 1000)
+                if product_tmpl.write_date
+                else 0
+            )
+            image_url = (
+                f"{base_url}/api/parapharma/image/{product_tmpl.id}?unique={unique}"
+            )
+
+        return {
+            "line_id": line.id,
+            "raw_label": line.raw_label,
+            "name": line.corrected_name or line.extracted_name,
+            "extracted_name": line.extracted_name,
+            "corrected_name": line.corrected_name,
+            "dosage": line.dosage,
+            "form": line.form,
+            "quantity": line.quantity_text,
+            "duration": line.duration_text,
+            "confidence": line.confidence,
+            # ✅ CORRIGÉ : product.product.id → lu par getProductFromPos() dans le POS
+            "product_id": product_variant.id if product_variant else None,
+            # ✅ AJOUTÉ : product.template.id → image et prix côté mobile/panier
+            "product_tmpl_id": product_tmpl.id if product_tmpl else None,
+            "product_name": product_variant.display_name if product_variant else None,
+            "qty_available": line.qty_available,
+            "is_available": line.is_available,
+            "needs_review": line.needs_review,
+            "is_confirmed_by_client": line.is_confirmed_by_client,
+            "is_deleted_by_client": line.is_deleted_by_client,
+            "evaluation_state": line.evaluation_state,
+            "evaluation_message": line.evaluation_message,
+            "alternative_product_id": (
+                line.alternative_product_id.id if line.alternative_product_id else None
+            ),
+            "alternative_product_name": (
+                line.alternative_product_id.display_name
+                if line.alternative_product_id
+                else None
+            ),
+            "prix_ttc": round(prix_ttc, 3),
+            "image_url": image_url,
+        }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # EXPORT PAYLOAD
+    # ─────────────────────────────────────────────────────────────────────
+
+    def export_client_payload(self):
+        self.ensure_one()
+        return {
+            "prescription_id": self.id,
+            "status": self.state,
+            "patient_name": self.patient_name,
+            "medications": [
+                {
+                    "line_id": l.id,
+                    "name": l.corrected_name or l.extracted_name,
+                    "raw_label": l.raw_label,
+                    "dosage": l.dosage,
+                    "form": l.form,
+                    "quantity": l.quantity_text,
+                    "duration": l.duration_text,
+                    "confidence": l.confidence,
+                    "matched_product_id": (
+                        l.product_id.product_tmpl_id.id if l.product_id else None
+                    ),
+                    "matched_product_name": (
+                        l.product_id.display_name if l.product_id else None
+                    ),
+                    "available": l.is_available,
+                    "available_qty": l.qty_available,
+                    "needs_review": l.needs_review,
+                }
+                for l in self.line_ids
+            ],
+            "summary": {
+                "total_lines": len(self.line_ids),
+                "available_count": len(self.line_ids.filtered(lambda x: x.is_available)),
+                "unavailable_count": len(
+                    self.line_ids.filtered(lambda x: not x.is_available)
+                ),
+                "review_required": any(self.line_ids.mapped("needs_review")),
+            },
+        }
+
     def export_mobile_payload(self):
         self.ensure_one()
+        base_url = self._get_base_url()
         visible_lines = self.line_ids.filtered(lambda l: not l.is_deleted_by_client)
 
         return {
@@ -509,57 +625,6 @@ class PharmacyPrescription(models.Model):
             "doctor_name": self.doctor_name,
             "prescription_date": self.prescription_date,
             "medications": [
-                {
-                    "line_id": l.id,
-                    "raw_label": l.raw_label,
-                    "name": l.corrected_name or l.extracted_name,
-                    "extracted_name": l.extracted_name,
-                    "corrected_name": l.corrected_name,
-                    "dosage": l.dosage,
-                    "form": l.form,
-                    "quantity": l.quantity_text,
-                    "duration": l.duration_text,
-                    "confidence": l.confidence,
-                    "product_id": l.product_id.id if l.product_id else None,
-                    "product_name": l.product_id.display_name if l.product_id else None,
-                    "qty_available": l.qty_available,
-                    "is_available": l.is_available,
-                    "needs_review": l.needs_review,
-                    "is_confirmed_by_client": l.is_confirmed_by_client,
-                    "is_deleted_by_client": l.is_deleted_by_client,
-                    "evaluation_state": l.evaluation_state,
-                    "evaluation_message": l.evaluation_message,
-                    "alternative_product_id": l.alternative_product_id.id if l.alternative_product_id else None,
-                    "alternative_product_name": l.alternative_product_id.display_name if l.alternative_product_id else None,
-                }
-                for l in visible_lines
-            ]
+                self._serialize_line(l, base_url) for l in visible_lines
+            ],
         }
-
-    def _get_active_client_lines(self):
-        self.ensure_one()
-        return self.line_ids.filtered(lambda l: not l.is_deleted_by_client and l.is_confirmed_by_client)
-
-    def action_evaluate_mobile_lines(self):
-        self.ensure_one()
-
-        self._match_products()
-        self._compute_stock()
-
-        results = []
-        for line in self._get_active_client_lines():
-            result = self._evaluate_confirmed_medication(line)
-
-            line.evaluation_state = result.get("state")
-            line.evaluation_message = result.get("message")
-
-            alt = result.get("alternative") or {}
-            line.alternative_product_id = alt.get("id") if alt else False
-
-            results.append({
-                "line_id": line.id,
-                "requested_name": line.corrected_name or line.extracted_name,
-                **result,
-            })
-
-        return results

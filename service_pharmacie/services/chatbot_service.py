@@ -45,7 +45,15 @@ class ChatbotService:
 - ممنوع شرح طرق الانتحار، إيذاء النفس، أو إيذاء الآخرين
 - ممنوع إعطاء وصفات علاجية نهائية أو تأكيد مرض معيّن
 - ممنوع اقتراح أدوية تصرف بوصفة كبديل آمن بدون تنبيه واضح لضرورة الرجوع لمهني صحة
-
+إذا المستخدم كتب اسم دواء فيه غلط إملائي أو faute de frappe، حاول تفهم المقصود وتصلّح الاسم تلقائيًا قبل الإجابة.
+مثال:
+"تقصد Doliprane؟"
+إذا اسم الدواء غير معروف أو المساعد موش متأكد منو:
+"مانيش نعرف هالدواء / الاسم موش واضح، تنجم تكتب الاسم الصحيح أو الاسم التجاري من جديد."
+إذا ما لقيتش معلومة موثوقة على الدواء:
+"مانيش متأكد من هالمعلومة / ما نعرفش هالدواء."
+ممنوع اختراع معلومات على دواء غير معروف أو غير واضح.
+إذا الاسم قريب لدواء معروف، اقترح التصحيح فقط ثم واصل التثبت.
 قواعد الرد:
 - كن ودودًا، موجزًا، ومهنيًا
 - جاوب بطريقة مفهومة وبسيطة
@@ -56,7 +64,25 @@ class ChatbotService:
 - إذا كانت المعلومة غير أكيدة أو ناقصة، قل هذا بوضوح
 - في الحالات الحساسة، انصح المستخدم بالتواصل مع طبيب أو صيدلي
 - في الحالات المستعجلة أو الخطيرة، اطلب منه يتوجه فورًا للاستعجالي أو يكلم طبيب حالًا
-
+إذا المستخدم طلب دواء أو سأل على availability، اطلب منه فقط:
+"أكتب اسم الدواء."
+ممنوع تقول: متوفر / غير متوفر / نفد المخزون / unavailable.
+ممنوع تعلّق على نتيجة stock نصيًا.
+إذا المستخدم كتب اسم دواء:
+قل فقط:
+"إذا كان الدواء موجود، باش يظهرك button تنجم تضغط عليه وتزيدو مباشرة للسلة."
+إذا الدواء يحتاج وصفة طبية:
+قل فقط:
+"هذا الدواء يتطلب ordonnance obligatoire."
+إذا اسم الدواء مكتوب غلط:
+صحّح الاسم تلقائيًا واسأل بنفس الاسم الصحيح.
+مثال:
+"تقصد Doliprane؟"
+إذا المستخدم ما لقاش button أو product card بعد البحث:
+يفهم أن المنتج غير متوفر.
+لا تقل هذا صراحة.
+إذا الدواء غير موجود وما يحتاجش ordonnance، تنجم فقط تعرض alternatives موجودين في stock.
+إذا الدواء غير موجود ويحتاج ordonnance، لا تعرض alternatives.
 أسلوب الرفض خارج الاختصاص:
 "نعتذر، أنا نعاون فقط في الأسئلة المتعلقة بالأدوية، الصحة، والتغذية. إذا عندك سؤال في هالمجال، مرحبا."
 
@@ -80,10 +106,11 @@ class ChatbotService:
         if not cfg["api_key"]:
             return {"success": False, "error": "Clé OpenAI non configurée."}
 
+        # Recherche produits correspondant au message
         products_rs = request.env["product.template"].sudo().chatbot_search_products(
-        message,
-        limit=3
-    )
+            message,
+            limit=3,
+        )
         stock_context = build_stock_context(products_rs)
 
         system_content = cls.CHATBOT_SYSTEM_PROMPT
@@ -140,6 +167,8 @@ class ChatbotService:
         if not reply_text:
             return {"success": False, "error": "OpenAI لم يُرجع جوابًا."}
 
+        # FIX: chatbot_to_dict() utilise prix_vente_tnd et quantite_stock
+        # directement depuis product.template — pas de tva_taux
         products_found = [p.chatbot_to_dict() for p in products_rs]
 
         return {
@@ -161,6 +190,8 @@ class ChatbotService:
 
         return {
             "success": True,
+            # FIX: chatbot_to_dict() est défini sur product.template
+            # et utilise uniquement les champs réels du modèle
             "product": product.chatbot_to_dict(),
         }
 
@@ -179,9 +210,12 @@ class ChatbotService:
         for ligne in panier:
             product = products.get(ligne["product_id"])
             if product:
-                ligne["stock"] = int(product.quantite_stock or 0)
-                ligne["disponible"] = ligne["stock"] > 0
-                ligne["alerte"] = ligne["quantite"] > ligne["stock"]
+                # FIX: copie le dict pour ne pas muter le panier en mémoire
+                ligne = dict(ligne)
+                # FIX: quantite_stock est un champ computed sur product.template
+                stock = int(getattr(product, "quantite_stock", 0) or 0)
+                ligne["disponible"] = stock > 0
+                ligne["alerte"] = ligne["quantite"] > stock
                 lignes_valides.append(ligne)
 
         total_ttc = sum(
@@ -208,7 +242,8 @@ class ChatbotService:
         if not product.exists():
             return {"success": False, "error": "Produit introuvable."}
 
-        stock = int(product.quantite_stock or 0)
+        # FIX: utiliser getattr avec fallback pour quantite_stock (computed)
+        stock = int(getattr(product, "quantite_stock", 0) or 0)
         if stock <= 0:
             return {
                 "success": False,
@@ -266,7 +301,8 @@ class ChatbotService:
             panier = [line for line in panier if line["product_id"] != product_id]
         else:
             product = request.env["product.template"].sudo().browse(product_id)
-            stock = int(product.quantite_stock or 0) if product.exists() else 0
+            # FIX: getattr avec fallback pour quantite_stock (computed field)
+            stock = int(getattr(product, "quantite_stock", 0) or 0) if product.exists() else 0
             if quantite > stock:
                 return {"success": False, "error": f"الكمية تتجاوز المخزون ({stock})."}
 
@@ -328,6 +364,8 @@ class ChatbotService:
                 "order_id": order.id,
                 "product_id": variant.id,
                 "product_uom_qty": line["quantite"],
+                # FIX: prix_ttc dans le panier est déjà prix_vente_tnd
+                # stocké au moment de l'ajout via chatbot_to_dict()
                 "price_unit": line["prix_ttc"],
             })
 

@@ -6,6 +6,7 @@ from odoo import http
 
 from ..services.chatbot_service import ChatbotService
 from ..utils.http_utils import get_json_payload
+from odoo.addons.api_auth.utils.http_utils import require_session
 
 _logger = logging.getLogger(__name__)
 
@@ -20,6 +21,10 @@ class QPharmaBotController(http.Controller):
         csrf=False,
     )
     def chatbot_message(self, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = get_json_payload(kwargs)
             _logger.info("QPharmaBot /message payload: %s", payload)
@@ -51,6 +56,10 @@ class QPharmaBotController(http.Controller):
         csrf=False,
     )
     def get_stock(self, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = get_json_payload(kwargs)
             return ChatbotService.get_stock(payload)
@@ -69,6 +78,10 @@ class QPharmaBotController(http.Controller):
         csrf=False,
     )
     def panier_get(self, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = get_json_payload(kwargs)
             return ChatbotService.get_panier(payload)
@@ -87,6 +100,10 @@ class QPharmaBotController(http.Controller):
         csrf=False,
     )
     def panier_ajouter(self, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = get_json_payload(kwargs)
             return ChatbotService.add_to_panier(payload)
@@ -105,6 +122,10 @@ class QPharmaBotController(http.Controller):
         csrf=False,
     )
     def panier_modifier(self, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = get_json_payload(kwargs)
             return ChatbotService.modify_panier(payload)
@@ -123,6 +144,10 @@ class QPharmaBotController(http.Controller):
         csrf=False,
     )
     def panier_vider(self, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = get_json_payload(kwargs)
             return ChatbotService.clear_panier(payload)
@@ -141,6 +166,10 @@ class QPharmaBotController(http.Controller):
         csrf=False,
     )
     def panier_confirmer(self, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = get_json_payload(kwargs)
             return ChatbotService.confirm_panier(payload)

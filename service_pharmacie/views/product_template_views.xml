@@ -3,6 +3,7 @@
 
     <!-- ═══════════════════════════════════════════════════════════════════
          VUE LISTE — Médicaments
+         Tous les champs du modèle (optional="show"|"hide") pour export/import
     ══════════════════════════════════════════════════════════════════════ -->
     <record id="view_medicament_list" model="ir.ui.view">
         <field name="name">product.template.list.medicament</field>
@@ -11,11 +12,17 @@
             <list string="Médicaments"
                   decoration-warning="alerte_stock == True"
                   decoration-muted="active == False"
-                  multi_edit="1">
+                  multi_edit="1"
+                  export_xlsx="1">
 
+                <!-- ── Identification ────────────────────────────── -->
                 <field name="name"
                        string="Désignation"
                        class="fw-bold"/>
+
+                <field name="nom_commercial"
+                       string="Nom Commercial"
+                       optional="show"/>
 
                 <field name="nom_generique"
                        string="DCI"
@@ -25,18 +32,44 @@
                        string="Dosage"
                        optional="show"/>
 
-                <field name="forme_galenique_id"
-                       string="Forme"
+                <field name="forme_galenique"
+                       string="Forme Galénique"
                        optional="show"/>
 
-                <field name="fabricant"
-                       string="Fabricant"
-                       optional="hide"/>
+                <!-- ── Réglementation ────────────────────────────── -->
+                <field name="necessite_ordonnance"
+                       string="Ordonnance"
+                       widget="boolean_toggle"
+                       optional="show"
+                       readonly="1"/>
+
+                <field name="parapharmaceutique"
+                       string="Parapharma"
+                       widget="boolean_toggle"
+                       optional="show"
+                       readonly="1"/>
+
+                <field name="obligation_de_paiement"
+                       string="Paiement Obligatoire"
+                       widget="boolean_toggle"
+                       optional="hide"
+                       readonly="1"/>
+
+                <!-- ── Tarification ──────────────────────────────── -->
+                <field name="prix_achat_tnd"
+                       string="PA (TND)"
+                       digits="[12,3]"
+                       optional="show"/>
 
                 <field name="prix_vente_tnd"
                        string="PVP (TND)"
                        digits="[12,3]"
                        optional="show"/>
+
+                <!-- ── Stock ─────────────────────────────────────── -->
+                <field name="seuil_alerte_stock"
+                       string="Seuil Alerte"
+                       optional="hide"/>
 
                 <field name="quantite_stock"
                        string="Stock"
@@ -44,13 +77,22 @@
                        decoration-danger="alerte_stock == True"
                        decoration-success="alerte_stock == False"/>
 
+                <field name="lot_count"
+                       string="Lots"
+                       optional="hide"
+                       readonly="1"/>
+
                 <field name="alerte_stock"
                        string="⚠ Alerte"
                        widget="boolean_toggle"
                        optional="show"
                        readonly="1"/>
 
-                <field name="active" optional="hide"/>
+                <!-- ── Statut ─────────────────────────────────────── -->
+                <field name="active"
+                       string="Actif"
+                       optional="show"/>
+
             </list>
         </field>
     </record>
@@ -67,9 +109,10 @@
 
                 <field name="id"/>
                 <field name="name"/>
+                <field name="nom_commercial"/>
                 <field name="nom_generique"/>
                 <field name="dosage"/>
-                <field name="forme_galenique_id"/>
+                <field name="forme_galenique"/>
                 <field name="prix_vente_tnd"/>
                 <field name="quantite_stock"/>
                 <field name="alerte_stock"/>
@@ -95,7 +138,12 @@
                                 <div class="fw-bold text-truncate" style="font-size:.92rem;">
                                     <field name="name"/>
                                 </div>
-                                <div class="text-muted" style="font-size:.78rem;" t-if="record.nom_generique.raw_value">
+                                <div class="text-muted" style="font-size:.78rem;"
+                                     t-if="record.nom_commercial.raw_value">
+                                    <t t-esc="record.nom_commercial.value"/>
+                                </div>
+                                <div class="text-muted" style="font-size:.78rem;"
+                                     t-if="record.nom_generique.raw_value">
                                     <i class="fa fa-flask me-1"/>
                                     <t t-esc="record.nom_generique.value"/>
                                 </div>
@@ -108,9 +156,9 @@
                                 <i class="fa fa-tint me-1"/>
                                 <t t-esc="record.dosage.value"/>
                             </span>
-                            <span t-if="record.forme_galenique_id.raw_value"
+                            <span t-if="record.forme_galenique.raw_value"
                                   class="badge rounded-pill text-bg-secondary">
-                                <t t-esc="record.forme_galenique_id.value"/>
+                                <t t-esc="record.forme_galenique.value"/>
                             </span>
                         </div>
 
@@ -151,10 +199,10 @@
         <field name="arch" type="xml">
             <search string="Rechercher Médicaments">
 
-                <field name="name"           string="Désignation"/>
-                <field name="nom_commercial" string="Nom Commercial"/>
-                <field name="nom_generique"  string="DCI"/>
-                <field name="fabricant"      string="Fabricant"/>
+                <field name="name"            string="Désignation"/>
+                <field name="nom_commercial"  string="Nom"/>
+                <field name="nom_generique"   string="DCI"/>
+                <field name="forme_galenique" string="Forme Galénique"/>
 
                 <separator/>
 
@@ -180,11 +228,7 @@
 
                 <filter name="group_by_forme"
                         string="Grouper par Forme"
-                        context="{'group_by': 'forme_galenique_id'}"/>
-
-                <filter name="group_by_fabricant"
-                        string="Grouper par Fabricant"
-                        context="{'group_by': 'fabricant'}"/>
+                        context="{'group_by': 'forme_galenique'}"/>
 
             </search>
         </field>
@@ -228,7 +272,8 @@
                     <label for="is_medicament"
                            class="fw-bold text-primary mb-0"
                            string="Produit Médicament"/>
-                    <span class="badge text-bg-primary ms-1" invisible="not is_medicament">Pharmacie</span>
+                    <span class="badge text-bg-primary ms-1"
+                          invisible="not is_medicament">Pharmacie</span>
                 </div>
             </xpath>
 
@@ -254,14 +299,16 @@
                     <!-- Bloc identification -->
                     <group string="Identification">
                         <group>
-                            <field name="nom_commercial"      placeholder="Ex : Doliprane"/>
-                            <field name="nom_generique"       placeholder="Ex : Paracétamol"/>
-                            <field name="code_barre_pharmacie" placeholder="CIP / EAN13"/>
-                            <field name="fabricant"           placeholder="Laboratoire / Fabricant"/>
+                            <field name="nom_commercial"
+                                   placeholder="Ex : Doliprane"/>
+                            <field name="nom_generique"
+                                   placeholder="Ex : Paracétamol"/>
+                            <field name="dosage"
+                                   placeholder="Ex : 500 mg"/>
+                            <field name="forme_galenique"
+                                   placeholder="Ex : Comprimé"/>
                         </group>
                         <group>
-                            <field name="dosage"                placeholder="Ex : 500 mg"/>
-                            <field name="forme_galenique_id"/>
                             <field name="necessite_ordonnance"  widget="boolean_toggle"/>
                             <field name="parapharmaceutique"    widget="boolean_toggle"/>
                             <field name="obligation_de_paiement" widget="boolean_toggle"/>
@@ -273,7 +320,6 @@
                         <group>
                             <field name="prix_achat_tnd"/>
                             <field name="prix_vente_tnd"/>
-                            <field name="tva_taux"/>
                         </group>
                     </group>
 
@@ -283,8 +329,7 @@
                             <field name="seuil_alerte_stock"/>
                             <field name="quantite_stock"
                                    string="Quantité disponible"
-                                   readonly="1"
-                                   force_save="1"/>
+                                   readonly="1"/>
                             <field name="lot_count"
                                    string="Nombre de Lots"
                                    readonly="1"/>
@@ -407,30 +452,32 @@
         <field name="res_model">pharmacie.forme.galenique</field>
         <field name="view_mode">list,form</field>
     </record>
-<!-- Masquer qty_available natif partout -->
-<record id="product_template_hide_native_qty_available" model="ir.ui.view">
-    <field name="name">product.template.hide.native.qty.available</field>
-    <field name="model">product.template</field>
-    <field name="inherit_id" ref="product.product_template_form_view"/>
-    <field name="arch" type="xml">
-        <xpath expr="//field[@name='qty_available']" position="attributes">
-            <attribute name="invisible">1</attribute>
-        </xpath>
-    </field>
-</record>
 
-<!-- Afficher quantite_stock après qty_available -->
-<record id="product_template_show_custom_quantite_stock" model="ir.ui.view">
-    <field name="name">product.template.show.custom.quantite.stock</field>
-    <field name="model">product.template</field>
-    <field name="inherit_id" ref="product.product_template_form_view"/>
-    <field name="arch" type="xml">
-        <xpath expr="//field[@name='qty_available']" position="after">
-            <field name="quantite_stock"
-                   string="Quantité disponible"
-                   readonly="1"
-                   invisible="not is_medicament"/>
-        </xpath>
-    </field>
-</record>
+    <!-- Masquer qty_available natif partout -->
+    <record id="product_template_hide_native_qty_available" model="ir.ui.view">
+        <field name="name">product.template.hide.native.qty.available</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='qty_available']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Afficher quantite_stock après qty_available -->
+    <record id="product_template_show_custom_quantite_stock" model="ir.ui.view">
+        <field name="name">product.template.show.custom.quantite.stock</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='qty_available']" position="after">
+                <field name="quantite_stock"
+                       string="Quantité disponible"
+                       readonly="1"
+                       invisible="not is_medicament"/>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>

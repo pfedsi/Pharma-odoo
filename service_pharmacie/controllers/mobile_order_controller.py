@@ -3,6 +3,7 @@ import logging
 from odoo import http
 from odoo.http import request
 from ..services.reservation_service import ReservationService
+from odoo.addons.api_auth.utils.http_utils import require_session
 
 _logger = logging.getLogger(__name__)
 
@@ -35,6 +36,10 @@ class MobileOrderController(http.Controller):
         POST /api/mobile/order/cancel_reservation
         Body : { "reservation_id": int }
         """
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = self._get_params(**kwargs)
             reservation_id = int(payload.get("reservation_id") or 0)
@@ -72,6 +77,10 @@ class MobileOrderController(http.Controller):
         """
         POST /api/mobile/reservation/<id>/cancel
         """
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             reservation = request.env["pharmacy.reservation"].sudo().browse(reservation_id)
             if not reservation.exists():
@@ -101,6 +110,10 @@ class MobileOrderController(http.Controller):
         csrf=False,
     )
     def start_mobile_order(self, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             payload = self._get_params(**kwargs)
             _logger.info("start_mobile_order payload = %s", payload)
@@ -120,11 +133,11 @@ class MobileOrderController(http.Controller):
             public_user = request.env.ref("base.public_user")
             svc = ReservationService(request.env)
             reservation_data = svc.create(
-                user_id=public_user.id,
-                service_id=service_id,
-                date_heure=date_heure_reservation,
-                notes=notes,
-            )
+            user_id=uid,   
+            service_id=service_id,
+            date_heure=date_heure_reservation,
+            notes=notes,
+        )
             reservation = request.env["pharmacy.reservation"].sudo().browse(
                 reservation_data["id"]
             )
@@ -164,6 +177,10 @@ class MobileOrderController(http.Controller):
         csrf=False,
     )
     def get_mobile_order(self, order_id, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             order = request.env["pharmacy.mobile.order"].sudo().browse(order_id)
             if not order.exists():
@@ -215,6 +232,10 @@ class MobileOrderController(http.Controller):
         csrf=False,
     )
     def confirm_mobile_order(self, order_id, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             order = request.env["pharmacy.mobile.order"].sudo().browse(order_id)
             if not order.exists():
@@ -238,6 +259,10 @@ class MobileOrderController(http.Controller):
         csrf=False,
     )
     def cancel_mobile_order(self, order_id, **kwargs):
+        uid = require_session()
+        if not uid:
+            return {"success": False, "message": "Non autorisé : Token invalide ou manquant."}
+
         try:
             order = request.env["pharmacy.mobile.order"].sudo().browse(order_id)
             if not order.exists():

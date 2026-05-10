@@ -244,27 +244,37 @@ async function callNextTicket() {
 
         if (r?.prescription) {
             console.log("Prescription auto chargée =", r.prescription);
-
             switchToCaisseTab();
-            renderPrescriptionInCaisse(r.prescription);
-
-            showPrescriptionToast(
-                "Ordonnance chargée automatiquement",
-                "success"
-            );
+            const meds = r.prescription.medications || [];
+            const items = meds.map(m => ({
+                name: m.name,
+                description: `${m.dosage || ""} ${m.form || ""}`.trim(),
+                productName: m.product_name || "Non trouvé dans le catalogue",
+                message: m.evaluation_message || "",
+                productId: m.product_id,
+                lineId: m.line_id,
+                quantity: 1,
+                isFound: !!m.product_id
+            }));
+            renderImportedLinesInCaisse("Ordonnance scannée", items);
+            showPrescriptionToast("Ordonnance chargée automatiquement", "success");
         }
-if (r?.mobile_order_lines?.length) {
-    console.log("Panier mobile complet =", r.mobile_order_lines);
-
-    switchToCaisseTab();
-    renderMobileOrderLinesInCaisse(r.mobile_order_lines);
-
-    showPrescriptionToast(
-        "Panier mobile chargé automatiquement",
-        "success"
-    );
-}
-
+        if (r?.mobile_order_lines?.length) {
+            console.log("Panier mobile complet =", r.mobile_order_lines);
+            switchToCaisseTab();
+            const items = r.mobile_order_lines.map(l => ({
+                name: l.name,
+                description: `Source : ${l.source_type || "-"} | Qté : ${l.quantity || 1}`,
+                productName: `Prix : ${Number(l.price_unit || 0).toFixed(2)}`,
+                message: "",
+                productId: l.product_id || l.product_tmpl_id,
+                lineId: l.id || 0,
+                quantity: l.quantity || 1,
+                isFound: !!(l.product_id || l.product_tmpl_id)
+            }));
+            renderImportedLinesInCaisse("Panier mobile", items);
+            showPrescriptionToast("Panier mobile chargé automatiquement", "success");
+        }
     } catch (e) {
         console.error("[ratt] call_next:", e);
     }
@@ -274,11 +284,559 @@ async function finishCurrentTicket() {
     try {
         await rpc("/pos/rattachement/finish_current", {});
         window.dispatchEvent(new CustomEvent("pos-clear-current-order"));
-
         updateTicket(null);
         currentScannedPrescription = null;
     } catch (e) {
         console.error("[ratt] finish:", e);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  PRESCRIPTION — Modal de sélection source (Caméra / Fichier)
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Ouvre le modal de choix de source pour le scan d'ordonnance.
+ */
+function openPrescriptionScanModal() {
+    const existing = document.getElementById("rx-source-modal");
+    if (existing) existing.remove();
+
+    // ── Overlay ──────────────────────────────────────────────────
+    const overlay = document.createElement("div");
+    overlay.id = "rx-source-modal";
+    Object.assign(overlay.style, {
+        position: "fixed",
+        inset: "0",
+        zIndex: "999999",
+        background: "rgba(0, 0, 0, 0.60)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backdropFilter: "blur(4px)",
+        animation: "rxOverlayIn 0.18s ease both",
+    });
+
+    // ── Keyframes (injectés une seule fois) ───────────────────────
+    if (!document.getElementById("rx-modal-styles")) {
+        const style = document.createElement("style");
+        style.id = "rx-modal-styles";
+        style.textContent = `
+            @keyframes rxOverlayIn {
+                from { opacity: 0; }
+                to   { opacity: 1; }
+            }
+            @keyframes rxCardIn {
+                from { opacity: 0; transform: translateY(12px) scale(0.97); }
+                to   { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            .rx-src-btn {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+                padding: 20px 16px;
+                border-radius: 12px;
+                border: 1px solid rgba(255,255,255,0.10);
+                background: rgba(255,255,255,0.05);
+                color: rgba(255,255,255,0.85);
+                cursor: pointer;
+                font-family: 'Google Sans','Roboto',system-ui,sans-serif;
+                font-size: 13px;
+                font-weight: 500;
+                flex: 1;
+                transition: all 0.15s ease;
+                min-width: 120px;
+            }
+            .rx-src-btn:hover {
+                background: rgba(255,255,255,0.11);
+                border-color: rgba(255,255,255,0.22);
+                transform: translateY(-2px);
+            }
+            .rx-src-btn:active { transform: scale(0.97); }
+            .rx-src-btn .rx-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .rx-src-btn--camera .rx-icon {
+                background: rgba(26, 115, 232, 0.20);
+                border: 1px solid rgba(26, 115, 232, 0.35);
+                color: #8ab4f8;
+            }
+            .rx-src-btn--camera:hover .rx-icon {
+                background: #1a73e8;
+                color: #fff;
+                border-color: #1a73e8;
+                box-shadow: 0 4px 16px rgba(26,115,232,0.45);
+            }
+            .rx-src-btn--file .rx-icon {
+                background: rgba(52, 168, 83, 0.18);
+                border: 1px solid rgba(52, 168, 83, 0.30);
+                color: #81c995;
+            }
+            .rx-src-btn--file:hover .rx-icon {
+                background: #34a853;
+                color: #fff;
+                border-color: #34a853;
+                box-shadow: 0 4px 16px rgba(52,168,83,0.40);
+            }
+            .rx-close-btn {
+                position: absolute;
+                top: 14px;
+                right: 14px;
+                width: 26px;
+                height: 26px;
+                border-radius: 8px;
+                border: 0.5px solid rgba(255,255,255,0.10);
+                background: rgba(255,255,255,0.06);
+                color: rgba(255,255,255,0.55);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.14s ease;
+                font-size: 14px;
+                line-height: 1;
+            }
+            .rx-close-btn:hover {
+                background: rgba(255,255,255,0.12);
+                color: rgba(255,255,255,0.90);
+                border-color: rgba(255,255,255,0.18);
+            }
+            /* ── Modal caméra live ── */
+            #rx-camera-modal video {
+                width: 100%;
+                max-width: 640px;
+                border-radius: 12px;
+                border: 2px solid rgba(255,255,255,0.15);
+                display: block;
+            }
+            #rx-camera-modal .rx-cam-btn {
+                padding: 12px 28px;
+                border-radius: 10px;
+                border: none;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                font-family: 'Google Sans','Roboto',system-ui,sans-serif;
+                transition: opacity 0.15s;
+            }
+            #rx-camera-modal .rx-cam-btn:hover { opacity: 0.85; }
+            #rx-camera-modal .rx-cam-btn--capture {
+                background: #1a73e8;
+                color: #fff;
+            }
+            #rx-camera-modal .rx-cam-btn--cancel {
+                padding: 12px 20px;
+                border: 1px solid rgba(255,255,255,0.20);
+                background: rgba(255,255,255,0.06);
+                color: rgba(255,255,255,0.75);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // ── Carte modale ─────────────────────────────────────────────
+    const card = document.createElement("div");
+    Object.assign(card.style, {
+        position: "relative",
+        width: "320px",
+        background: "#1e2742",
+        borderRadius: "18px",
+        border: "0.5px solid rgba(255,255,255,0.12)",
+        padding: "22px 20px 20px",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.50), 0 2px 8px rgba(0,0,0,0.30)",
+        animation: "rxCardIn 0.22s cubic-bezier(0.34,1.3,0.64,1) both",
+        fontFamily: "'Google Sans','Roboto',system-ui,sans-serif",
+    });
+
+    card.innerHTML = `
+        <button class="rx-close-btn" id="rx-modal-close" title="Fermer">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            </svg>
+        </button>
+
+        <div style="margin-bottom:18px;">
+            <p style="font-size:14px;font-weight:600;color:rgba(255,255,255,0.92);margin:0 0 4px;letter-spacing:-0.2px;">
+                Scanner une ordonnance
+            </p>
+            <p style="font-size:11.5px;color:rgba(255,255,255,0.42);margin:0;line-height:1.4;">
+                Choisissez la source de l'image
+            </p>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+
+            <!-- Bouton Caméra -->
+            <button class="rx-src-btn rx-src-btn--camera" id="rx-btn-camera">
+                <span class="rx-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"
+                              stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                        <circle cx="12" cy="13" r="4"
+                                stroke="currentColor" stroke-width="1.6"/>
+                    </svg>
+                </span>
+                <span>Caméra</span>
+                <span style="font-size:10px;color:rgba(255,255,255,0.35);font-weight:400;">Prendre une photo</span>
+            </button>
+
+            <!-- Bouton Fichier existant -->
+            <button class="rx-src-btn rx-src-btn--file" id="rx-btn-file">
+                <span class="rx-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="18" height="18" rx="3"
+                              stroke="currentColor" stroke-width="1.6"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"
+                                stroke="currentColor" stroke-width="1.4"/>
+                        <path d="M21 15l-5-5L5 21"
+                              stroke="currentColor" stroke-width="1.6"
+                              stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span>Galerie / PC</span>
+                <span style="font-size:10px;color:rgba(255,255,255,0.35);font-weight:400;">Image existante</span>
+            </button>
+
+        </div>
+    `;
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    // ── Fermer en cliquant l'overlay ─────────────────────────────
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closeRxModal();
+    });
+    document.getElementById("rx-modal-close").addEventListener("click", closeRxModal);
+
+    // ── Bouton Caméra → input capture (HTTP compatible) ────────────
+    document.getElementById("rx-btn-camera").addEventListener("click", () => {
+        closeRxModal();
+        openCameraCapture();
+    });
+
+    // ── Bouton Fichier → input[type=file] sans capture ────────────
+    document.getElementById("rx-btn-file").addEventListener("click", () => {
+        closeRxModal();
+        openFilePicker();
+    });
+}
+
+/** Ferme le modal de choix de source */
+function closeRxModal() {
+    const modal = document.getElementById("rx-source-modal");
+    if (modal) modal.remove();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  CAMÉRA — getUserMedia (HTTPS requis — fonctionne sur demopharma)
+//  Modal vidéo en direct avec bouton Capturer.
+//  PC → webcam, Mobile → caméra arrière.
+// ══════════════════════════════════════════════════════════════════
+
+function openCameraCapture() {
+    // Nettoyer un éventuel modal précédent
+    const old = document.getElementById("rx-camera-modal");
+    if (old) old.remove();
+
+    // ── Styles injectés une seule fois ───────────────────────────
+    if (!document.getElementById("rx-camera-styles")) {
+        const s = document.createElement("style");
+        s.id = "rx-camera-styles";
+        s.textContent = `
+            #rx-camera-modal {
+                position: fixed;
+                inset: 0;
+                z-index: 1000000;
+                background: rgba(0,0,0,0.92);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 16px;
+                padding: 20px;
+                font-family: 'Google Sans','Roboto',system-ui,sans-serif;
+            }
+            #rx-camera-modal video {
+                width: 100%;
+                max-width: 640px;
+                max-height: 60vh;
+                border-radius: 14px;
+                border: 2px solid rgba(255,255,255,0.15);
+                display: block;
+                background: #000;
+                object-fit: cover;
+            }
+            #rx-camera-modal .rx-cam-label {
+                font-size: 13px;
+                color: rgba(255,255,255,0.55);
+                margin: 0;
+                text-align: center;
+            }
+            #rx-camera-modal .rx-cam-label.error {
+                color: #f28b82;
+            }
+            #rx-camera-modal .rx-cam-row {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            #rx-camera-modal .rx-cam-btn {
+                padding: 11px 26px;
+                border-radius: 10px;
+                font-size: 14px;
+                font-weight: 700;
+                cursor: pointer;
+                font-family: inherit;
+                border: none;
+                transition: opacity 0.15s, transform 0.1s;
+            }
+            #rx-camera-modal .rx-cam-btn:hover  { opacity: 0.85; }
+            #rx-camera-modal .rx-cam-btn:active { transform: scale(0.96); }
+            #rx-camera-modal .rx-cam-btn--capture {
+                background: #1a73e8;
+                color: #fff;
+            }
+            #rx-camera-modal .rx-cam-btn--capture:disabled {
+                background: #444;
+                color: rgba(255,255,255,0.3);
+                cursor: not-allowed;
+                opacity: 1;
+            }
+            #rx-camera-modal .rx-cam-btn--switch {
+                background: rgba(255,255,255,0.08);
+                color: rgba(255,255,255,0.75);
+                border: 1px solid rgba(255,255,255,0.15);
+            }
+            #rx-camera-modal .rx-cam-btn--cancel {
+                background: rgba(255,255,255,0.06);
+                color: rgba(255,255,255,0.65);
+                border: 1px solid rgba(255,255,255,0.12);
+            }
+        `;
+        document.head.appendChild(s);
+    }
+
+    // ── Construire le modal ───────────────────────────────────────
+    const overlay = document.createElement("div");
+    overlay.id = "rx-camera-modal";
+
+    const label = document.createElement("p");
+    label.className = "rx-cam-label";
+    label.textContent = "Démarrage de la caméra…";
+
+    const video = document.createElement("video");
+    video.autoplay = true;
+    video.playsInline = true;
+    video.muted = true;
+    video.style.display = "none";
+
+    const btnRow = document.createElement("div");
+    btnRow.className = "rx-cam-row";
+
+    const captureBtn = document.createElement("button");
+    captureBtn.className = "rx-cam-btn rx-cam-btn--capture";
+    captureBtn.textContent = "📸 Capturer";
+    captureBtn.disabled = true;
+
+    const switchBtn = document.createElement("button");
+    switchBtn.className = "rx-cam-btn rx-cam-btn--switch";
+    switchBtn.textContent = "🔄 Changer caméra";
+    switchBtn.style.display = "none";
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.className = "rx-cam-btn rx-cam-btn--cancel";
+    cancelBtn.textContent = "✕ Annuler";
+
+    btnRow.appendChild(captureBtn);
+    btnRow.appendChild(switchBtn);
+    btnRow.appendChild(cancelBtn);
+
+    overlay.appendChild(label);
+    overlay.appendChild(video);
+    overlay.appendChild(btnRow);
+    document.body.appendChild(overlay);
+
+    // ── État interne ──────────────────────────────────────────────
+    let stream = null;
+    let facingMode = "environment"; // commence par caméra arrière
+    let availableCameras = [];
+
+    function stopStream() {
+        if (stream) {
+            stream.getTracks().forEach((t) => t.stop());
+            stream = null;
+        }
+    }
+
+    function closeCamera() {
+        stopStream();
+        overlay.remove();
+    }
+
+    // ── Démarrer le flux ──────────────────────────────────────────
+    async function startStream(facing) {
+        stopStream();
+        captureBtn.disabled = true;
+        video.style.display = "none";
+        label.textContent = "Démarrage de la caméra…";
+        label.className = "rx-cam-label";
+
+        try {
+            // Essai avec la facing demandée
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { ideal: facing },
+                    width:  { ideal: 1920 },
+                    height: { ideal: 1080 },
+                },
+                audio: false,
+            });
+        } catch (e1) {
+            try {
+                // Fallback : n'importe quelle caméra
+                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            } catch (e2) {
+                label.textContent = "❌ Caméra inaccessible : " + (e2.message || e2.name);
+                label.className = "rx-cam-label error";
+                console.error("[rx-camera]", e2);
+                return;
+            }
+        }
+
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+        video.style.display = "block";
+        label.style.display = "none";
+        captureBtn.disabled = false;
+
+        // Affiche le bouton switch s'il y a plusieurs caméras
+        if (availableCameras.length > 1) {
+            switchBtn.style.display = "inline-flex";
+        }
+    }
+
+    // ── Énumérer les caméras disponibles ─────────────────────────
+    navigator.mediaDevices.enumerateDevices()
+        .then((devices) => {
+            availableCameras = devices.filter((d) => d.kind === "videoinput");
+        })
+        .catch(() => {})
+        .finally(() => startStream(facingMode));
+
+    // ── Boutons ───────────────────────────────────────────────────
+    cancelBtn.addEventListener("click", closeCamera);
+
+    switchBtn.addEventListener("click", () => {
+        facingMode = facingMode === "environment" ? "user" : "environment";
+        switchBtn.textContent = facingMode === "environment" ? "🔄 Caméra arrière" : "🔄 Caméra avant";
+        startStream(facingMode);
+    });
+
+    captureBtn.addEventListener("click", () => {
+        if (!stream || captureBtn.disabled) return;
+
+        const canvas = document.createElement("canvas");
+        canvas.width  = video.videoWidth  || 1280;
+        canvas.height = video.videoHeight || 720;
+        canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        closeCamera();
+
+        canvas.toBlob(
+            async (blob) => {
+                if (!blob) {
+                    showPrescriptionToast("Erreur lors de la capture.", "error");
+                    return;
+                }
+                const file = new File([blob], "capture_ordonnance.jpg", { type: "image/jpeg" });
+                await processRxFile(file);
+            },
+            "image/jpeg",
+            0.92
+        );
+    });
+
+    // Fermer en cliquant l'overlay
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) closeCamera();
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  GALERIE / PC — input[type=file] sans capture
+// ══════════════════════════════════════════════════════════════════
+
+/**
+ * Ouvre le sélecteur de fichiers natif du système (galerie sur mobile,
+ * explorateur de fichiers sur PC). Aucun attribut "capture" → pas de
+ * redirection forcée vers la caméra.
+ */
+function openFilePicker() {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/webp";
+    input.style.display = "none";
+    // NE PAS mettre input.capture → le navigateur ouvre la galerie/PC
+
+    input.addEventListener("change", async (ev) => {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+        await processRxFile(file);
+        input.remove();
+    });
+
+    document.body.appendChild(input);
+    input.click();
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  TRAITEMENT COMMUN — envoi RPC après capture ou sélection fichier
+// ══════════════════════════════════════════════════════════════════
+
+async function processRxFile(file) {
+    try {
+        showPrescriptionToast("Analyse de l'ordonnance en cours…", "info");
+
+        const fileBase64 = await fileToBase64(file);
+
+        const result = await rpc("/pos/prescription/scan", {
+            filename: file.name || "ordonnance.jpg",
+            file_base64: fileBase64,
+            mimetype: file.type || "image/jpeg",
+        });
+
+        if (!result || !result.success) {
+            showPrescriptionToast(
+                (result && result.message) || "Erreur lors du scan.",
+                "error"
+            );
+            return;
+        }
+
+        showPrescriptionToast("Ordonnance scannée avec succès.", "success");
+
+        window.dispatchEvent(new CustomEvent("prescription-scanned", {
+            detail: {
+                prescriptionId: result.prescription_id,
+                data: result.data,
+            },
+        }));
+
+        console.log("[prescription] scanned:", result);
+    } catch (err) {
+        console.error("[prescription] scan error:", err);
+        showPrescriptionToast(
+            err?.message || "Erreur lors du scan de l'ordonnance.",
+            "error"
+        );
     }
 }
 
@@ -293,8 +851,8 @@ function showPrescriptionToast(message, type = "info") {
 
     const bg =
         type === "success" ? "#16a34a" :
-        type === "error" ? "#dc2626" :
-        "#2563eb";
+        type === "error"   ? "#dc2626" :
+                             "#1a73e8";
 
     Object.assign(toast.style, {
         position: "fixed",
@@ -307,8 +865,9 @@ function showPrescriptionToast(message, type = "info") {
         borderRadius: "12px",
         fontSize: "14px",
         fontWeight: "600",
-        boxShadow: "0 8px 24px rgba(0,0,0,.18)",
+        boxShadow: "0 8px 24px rgba(0,0,0,.22)",
         maxWidth: "420px",
+        fontFamily: "'Google Sans','Roboto',system-ui,sans-serif",
     });
 
     document.body.appendChild(toast);
@@ -332,60 +891,6 @@ function fileToBase64(file) {
     });
 }
 
-function openPrescriptionScanModal() {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/png,image/jpeg,image/webp";
-    input.style.display = "none";
-
-    input.addEventListener("change", async (ev) => {
-        const file = ev.target.files && ev.target.files[0];
-        if (!file) return;
-
-        try {
-            showPrescriptionToast("Analyse de l'ordonnance en cours...", "info");
-
-            const fileBase64 = await fileToBase64(file);
-
-            const result = await rpc("/pos/prescription/scan", {
-                filename: file.name || "ordonnance.jpg",
-                file_base64: fileBase64,
-                mimetype: file.type || "image/jpeg",
-            });
-
-            if (!result || !result.success) {
-                showPrescriptionToast(
-                    (result && result.message) || "Erreur lors du scan.",
-                    "error"
-                );
-                return;
-            }
-
-            showPrescriptionToast("Ordonnance scannée avec succès.", "success");
-
-            window.dispatchEvent(new CustomEvent("prescription-scanned", {
-                detail: {
-                    prescriptionId: result.prescription_id,
-                    data: result.data,
-                },
-            }));
-
-            console.log("[prescription] scanned:", result);
-        } catch (err) {
-            console.error("[prescription] scan error:", err);
-            showPrescriptionToast(
-                err?.message || "Erreur lors du scan de l'ordonnance.",
-                "error"
-            );
-        } finally {
-            input.remove();
-        }
-    });
-
-    document.body.appendChild(input);
-    input.click();
-}
-
 function switchToCaisseTab() {
     const caisseBtn =
         document.querySelector(".register-label") ||
@@ -393,12 +898,10 @@ function switchToCaisseTab() {
         document.querySelector(".navbar-menu .btn.active") ||
         document.querySelector(".navbar-menu .btn");
 
-    if (caisseBtn) {
-        caisseBtn.click();
-    }
+    if (caisseBtn) caisseBtn.click();
 }
 
-async function addScannedProductToCurrentOrder(productId, lineId, btn = null) {
+async function addScannedProductToCurrentOrder(productId, lineId, btn = null, quantity = 1) {
     try {
         if (!productId) {
             showPrescriptionToast("Aucun produit lié à cette ligne.", "error");
@@ -420,7 +923,11 @@ async function addScannedProductToCurrentOrder(productId, lineId, btn = null) {
         const productData = result.data;
         console.log("Produit POS à ajouter =", productData);
 
-        const added = clickNativeProductCard(productData);
+        let added = false;
+        for (let i = 0; i < quantity; i++) {
+            const res = clickNativeProductCard(productData);
+            if (res) added = true;
+        }
 
         if (!added) {
             showPrescriptionToast(
@@ -438,7 +945,7 @@ async function addScannedProductToCurrentOrder(productId, lineId, btn = null) {
         }
 
         showPrescriptionToast(
-            `${productData.display_name} ajouté à la vraie caisse.`,
+            `${productData.display_name} (x${quantity}) ajouté à la vraie caisse.`,
             "success"
         );
     } catch (err) {
@@ -446,8 +953,6 @@ async function addScannedProductToCurrentOrder(productId, lineId, btn = null) {
         showPrescriptionToast("Erreur lors de l'ajout à la commande.", "error");
     }
 }
-
-
 
 // ── Caisse UI ────────────────────────────────────────────────────
 function getOrderlinesContainer() {
@@ -490,6 +995,7 @@ function updateManualPosTotal() {
     amountEl.style.fontSize = "18px";
     amountEl.style.marginLeft = "auto";
 }
+
 function normalizeText(text) {
     return String(text || "")
         .toLowerCase()
@@ -528,6 +1034,7 @@ function clickNativeProductCard(productData) {
     matchedCard.click();
     return true;
 }
+
 function injectProductIntoCaisse(productData) {
     const orderlines =
         document.querySelector(".orderlines") ||
@@ -555,7 +1062,6 @@ function injectProductIntoCaisse(productData) {
         const currentQty = parseInt(qtyEl.textContent || "1", 10) || 1;
         const nextQty = currentQty + 1;
         const price = Number(existing.dataset.price || 0);
-
         qtyEl.textContent = String(nextQty);
         totalEl.textContent = `$ ${Number(price * nextQty).toFixed(2)}`;
         updateManualPosTotal();
@@ -563,7 +1069,6 @@ function injectProductIntoCaisse(productData) {
     }
 
     const price = Number(productData.lst_price || 0);
-
     const line = document.createElement("div");
     line.className = "manual-pos-line";
     line.dataset.productId = String(productData.id);
@@ -581,27 +1086,14 @@ function injectProductIntoCaisse(productData) {
 
     line.innerHTML = `
         <div style="display:flex; gap:10px; align-items:center; min-width:0;">
-            <div class="manual-pos-line-qty"
-                 style="font-weight:700; width:24px; text-align:center;">
-                1
-            </div>
-
+            <div class="manual-pos-line-qty" style="font-weight:700; width:24px; text-align:center;">1</div>
             <div style="min-width:0;">
-                <div style="
-                    font-weight:600;
-                    color:#111827;
-                    white-space:nowrap;
-                    overflow:hidden;
-                    text-overflow:ellipsis;
-                    max-width:220px;
-                ">
+                <div style="font-weight:600;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;">
                     ${productData.display_name}
                 </div>
             </div>
         </div>
-
-        <div class="manual-pos-line-total"
-             style="font-weight:700; color:#111827; white-space:nowrap;">
+        <div class="manual-pos-line-total" style="font-weight:700; color:#111827; white-space:nowrap;">
             $ ${price.toFixed(2)}
         </div>
     `;
@@ -609,15 +1101,15 @@ function injectProductIntoCaisse(productData) {
     list.appendChild(line);
     updateManualPosTotal();
 }
-function renderMobileOrderLinesInCaisse(lines) {
+
+function renderImportedLinesInCaisse(title, items) {
     const container = getOrderlinesContainer();
+    if (!container || !items?.length) return;
 
-    if (!container || !lines?.length) return;
-
-    let block = document.getElementById("pos-mobile-order-lines");
+    let block = document.getElementById("pos-imported-lines");
     if (!block) {
         block = document.createElement("div");
-        block.id = "pos-mobile-order-lines";
+        block.id = "pos-imported-lines";
         block.style.marginTop = "10px";
         block.style.borderTop = "1px solid #d1d5db";
         block.style.paddingTop = "10px";
@@ -625,208 +1117,35 @@ function renderMobileOrderLinesInCaisse(lines) {
     }
 
     block.innerHTML = `
-        <div style="
-            background:#fff7ed;
-            border:1px solid #fdba74;
-            border-radius:12px;
-            overflow:hidden;
-        ">
-            <div style="
-                padding:10px 12px;
-                background:#fed7aa;
-                font-weight:700;
-                font-size:14px;
-                color:#7c2d12;
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-            ">
-                <span>Panier mobile</span>
-                <button id="close-mobile-cart"
-                        style="border:none;background:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px;">
-                    Fermer
-                </button>
+        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px;overflow:hidden;">
+            <div style="padding:10px 12px;background:#e2e8f0;font-weight:700;font-size:14px;color:#0f172a;display:flex;justify-content:space-between;align-items:center;">
+                <span>${title}</span>
+                <button id="close-imported-caisse" style="border:none;background:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12px;">Fermer</button>
             </div>
-
             <div>
-                ${lines.map((l) => `
-                    <div style="
-                        display:flex;
-                        justify-content:space-between;
-                        align-items:flex-start;
-                        gap:12px;
-                        padding:10px 12px;
-                        border-top:1px solid #fed7aa;
-                        background:#fffaf0;
-                    ">
-                        <div style="flex:1; min-width:0;">
-                            <div style="font-size:14px;font-weight:700;color:#111827;">
-                                ${l.name || "-"}
-                            </div>
-                            <div style="margin-top:4px;font-size:12px;color:#475569;">
-                                Source : ${l.source_type || "-"} | Qté : ${l.quantity || 1}
-                            </div>
-                            <div style="margin-top:4px;font-size:12px;color:#475569;">
-                                Prix : ${Number(l.price_unit || 0).toFixed(2)}
-                            </div>
-                        </div>
-
-                        <button class="mobile-add-to-order-btn"
-                                data-product-tmpl-id="${l.product_tmpl_id || ""}"
-                                style="
-                                    border:none;
-                                    background:${l.product_tmpl_id ? "#2563eb" : "#cbd5e1"};
-                                    color:#fff;
-                                    border-radius:8px;
-                                    padding:7px 10px;
-                                    cursor:${l.product_tmpl_id ? "pointer" : "not-allowed"};
-                                    font-size:12px;
-                                    font-weight:700;
-                                "
-                                ${l.product_tmpl_id ? "" : "disabled"}>
-                            Ajouter
-                        </button>
-                    </div>
-                `).join("")}
-            </div>
-        </div>
-    `;
-
-    document.getElementById("close-mobile-cart")?.addEventListener("click", () => {
-        block.remove();
-    });
-}
-
-
-function renderPrescriptionInCaisse(data) {
-    const meds = (data && data.medications) || [];
-    const container = getOrderlinesContainer();
-
-    if (!container) {
-        console.warn("Zone Caisse introuvable pour afficher l'ordonnance");
-        return;
-    }
-
-    let block = document.getElementById("pos-scanned-rx-lines");
-    if (!block) {
-        block = document.createElement("div");
-        block.id = "pos-scanned-rx-lines";
-        block.style.marginTop = "10px";
-        block.style.borderTop = "1px solid #d1d5db";
-        block.style.paddingTop = "10px";
-        container.prepend(block);
-    }
-
-    block.innerHTML = `
-        <div style="
-            background:#f8fafc;
-            border:1px solid #cbd5e1;
-            border-radius:12px;
-            overflow:hidden;
-        ">
-            <div style="
-                padding:10px 12px;
-                background:#e2e8f0;
-                font-weight:700;
-                font-size:14px;
-                color:#0f172a;
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-            ">
-                <span>Ordonnance scannée</span>
-                <button id="close-rx-caisse"
-                        style="
-                            border:none;
-                            background:#fff;
-                            border-radius:8px;
-                            padding:4px 8px;
-                            cursor:pointer;
-                            font-size:12px;
-                        ">
-                    Fermer
-                </button>
-            </div>
-
-            <div>
-                ${meds.map((m) => {
-                    const ok = !!m.product_id;
+                ${items.map((item) => {
+                    const ok = item.isFound;
                     const bg = ok ? "#ecfdf5" : "#fef2f2";
                     const color = ok ? "#065f46" : "#991b1b";
-
                     return `
-                        <div style="
-                            display:flex;
-                            justify-content:space-between;
-                            align-items:flex-start;
-                            gap:12px;
-                            padding:10px 12px;
-                            border-top:1px solid #e5e7eb;
-                            background:${bg};
-                        ">
-                            <div style="flex:1; min-width:0;">
-                                <div style="
-                                    font-size:14px;
-                                    font-weight:700;
-                                    color:#111827;
-                                    line-height:1.2;
-                                ">
-                                    ${m.name || "-"}
-                                </div>
-
-                                <div style="
-                                    margin-top:4px;
-                                    font-size:12px;
-                                    color:#475569;
-                                ">
-                                    ${(m.dosage || "")} ${(m.form || "")}
-                                </div>
-
-                                <div style="
-                                    margin-top:4px;
-                                    font-size:12px;
-                                    color:${color};
-                                ">
-                                    ${m.product_name || "Non trouvé dans le catalogue"}
-                                </div>
-
-                                <div style="
-                                    margin-top:4px;
-                                    font-size:11px;
-                                    color:#64748b;
-                                ">
-                                    ${m.evaluation_message || ""}
-                                </div>
-
-                                <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-                                    <button class="rx-add-to-order-btn"
-                                            data-line-id="${m.line_id || ""}"
-                                            data-product-id="${m.product_id || ""}"
-                                            style="
-                                                border:none;
-                                                background:${m.product_id ? "#2563eb" : "#cbd5e1"};
-                                                color:#fff;
-                                                border-radius:8px;
-                                                padding:7px 10px;
-                                                cursor:${m.product_id ? "pointer" : "not-allowed"};
-                                                font-size:12px;
-                                                font-weight:700;
-                                            "
-                                            ${m.product_id ? "" : "disabled"}>
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 12px;border-top:1px solid #e5e7eb;background:${bg};">
+                            <div style="flex:1;min-width:0;">
+                                <div style="font-size:14px;font-weight:700;color:#111827;line-height:1.2;">${item.name || "-"}</div>
+                                ${item.description ? `<div style="margin-top:4px;font-size:12px;color:#475569;">${item.description}</div>` : ""}
+                                ${item.productName ? `<div style="margin-top:4px;font-size:12px;color:${color};">${item.productName}</div>` : ""}
+                                ${item.message ? `<div style="margin-top:4px;font-size:11px;color:#64748b;">${item.message}</div>` : ""}
+                                <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
+                                    <button class="import-add-to-order-btn"
+                                            data-line-id="${item.lineId || ""}"
+                                            data-product-id="${item.productId || ""}"
+                                            data-quantity="${item.quantity || 1}"
+                                            style="border:none;background:${ok ? "#2563eb" : "#cbd5e1"};color:#fff;border-radius:8px;padding:7px 10px;cursor:${ok ? "pointer" : "not-allowed"};font-size:12px;font-weight:700;"
+                                            ${ok ? "" : "disabled"}>
                                         Ajouter à la commande
                                     </button>
                                 </div>
                             </div>
-
-                            <div style="
-                                flex-shrink:0;
-                                font-size:12px;
-                                font-weight:700;
-                                color:${color};
-                                white-space:nowrap;
-                            ">
-                                ${ok ? "Trouvé" : "À vérifier"}
-                            </div>
+                            <div style="flex-shrink:0;font-size:12px;font-weight:700;color:${color};white-space:nowrap;">${ok ? "Trouvé" : "À vérifier"}</div>
                         </div>
                     `;
                 }).join("")}
@@ -834,24 +1153,19 @@ function renderPrescriptionInCaisse(data) {
         </div>
     `;
 
-    const closeBtn = document.getElementById("close-rx-caisse");
-    if (closeBtn) {
-        closeBtn.onclick = () => block.remove();
-    }
+    const closeBtn = document.getElementById("close-imported-caisse");
+    if (closeBtn) closeBtn.onclick = () => block.remove();
 
-    block.querySelectorAll(".rx-add-to-order-btn").forEach((btn) => {
+    block.querySelectorAll(".import-add-to-order-btn").forEach((btn) => {
         btn.addEventListener("click", async () => {
             const productId = parseInt(btn.dataset.productId || "0", 10);
-            const lineId = parseInt(btn.dataset.lineId || "0", 10);
-
-            console.log("Ajouter à la commande POS =>", { lineId, productId });
-
+            const lineId    = parseInt(btn.dataset.lineId    || "0", 10);
+            const quantity  = parseFloat(btn.dataset.quantity || "1");
             if (!productId) {
                 showPrescriptionToast("Aucun produit lié à cette ligne.", "error");
                 return;
             }
-
-            await addScannedProductToCurrentOrder(productId, lineId, btn);
+            await addScannedProductToCurrentOrder(productId, lineId, btn, quantity);
         });
     });
 }
@@ -880,22 +1194,34 @@ window.addEventListener("select-rattachement-mode", async (ev) => {
     }
 });
 
-window.addEventListener("call-next-ticket", () => callNextTicket());
+window.addEventListener("call-next-ticket",      () => callNextTicket());
 window.addEventListener("finish-current-ticket", () => finishCurrentTicket());
+
+// Bouton "Scanner ordonnance" → ouvre le modal de choix de source
 window.addEventListener("open-prescription-scan", () => {
     openPrescriptionScanModal();
 });
+
 window.addEventListener("prescription-scanned", async (ev) => {
     const payload = ev.detail || {};
-    const data = payload.data || {};
+    const data    = payload.data || {};
 
     currentScannedPrescription = payload;
     console.log("Prescription scannée reçue dans POS =", payload);
 
     switchToCaisseTab();
-    renderPrescriptionInCaisse(data);
-
-    
+    const meds  = data.medications || [];
+    const items = meds.map(m => ({
+        name:        m.name,
+        description: `${m.dosage || ""} ${m.form || ""}`.trim(),
+        productName: m.product_name || "Non trouvé dans le catalogue",
+        message:     m.evaluation_message || "",
+        productId:   m.product_id,
+        lineId:      m.line_id,
+        quantity:    1,
+        isFound:     !!m.product_id,
+    }));
+    renderImportedLinesInCaisse("Ordonnance scannée", items);
 });
 
 document.addEventListener("click", (ev) => {

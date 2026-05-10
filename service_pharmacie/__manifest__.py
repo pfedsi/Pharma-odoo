@@ -12,12 +12,11 @@
         "uom",
         "stock",
         "point_of_sale",
+        "account",
     ],
     "data": [
         "security/ir.model.access.csv",
-
         "data/sequence_mobile_order.xml",
-
         "views/localization_views.xml",
         "views/ticket_display.xml",
         "views/ResConfigSettings.xml",
@@ -33,8 +32,8 @@
         "views/product_template_views.xml",
         "views/service_menu.xml",
         "views/mobile_order_views.xml",
-
-        "data/medicament_data.xml",
+        "wizard/pos_refund_wizard_view.xml",
+        "views/pos_order_paid_views.xml",
     ],
     "assets": {
         "web.assets_backend": [

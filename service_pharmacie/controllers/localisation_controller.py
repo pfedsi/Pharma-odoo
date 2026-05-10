@@ -8,7 +8,7 @@ class PharmacyLocalizationController(http.Controller):
 
     @http.route(
         "/api/pharmacy/localisation",
-        type="jsonrpc",
+        type="json",          # ← CORRECTION : "json" et non "jsonrpc"
         auth="public",
         methods=["POST"],
         csrf=False,
@@ -19,7 +19,7 @@ class PharmacyLocalizationController(http.Controller):
         if not localisation:
             return {
                 "success": False,
-                "message": "Localisation pharmacie introuvable.",
+                "message": "Localisation pharmacie introuvable. Créez-en une dans le back-office Odoo.",
             }
 
         return {

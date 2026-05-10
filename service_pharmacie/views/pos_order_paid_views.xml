@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- LIST VIEW -->
+    <record id="view_pos_order_paid_list" model="ir.ui.view">
+        <field name="name">pos.order.paid.list</field>
+        <field name="model">pos.order</field>
+        <field name="arch" type="xml">
+            <list string="Commandes POS Payées"
+                  create="false"
+                  delete="false"
+                  decoration-success="state == 'done'"
+                  decoration-info="state == 'paid'"
+                  decoration-muted="is_refund == True">
+
+                <field name="name"/>
+                <field name="pos_reference"/>
+                <field name="date_order"/>
+                <field name="session_id"/>
+                <field name="config_id"/>
+                <field name="partner_id"/>
+                <field name="employee_id"/>
+
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-info="state == 'paid'"
+                       decoration-warning="state == 'invoiced'"/>
+
+                <field name="amount_total" widget="monetary" sum="Total"/>
+                <field name="amount_tax"   widget="monetary"/>
+                <field name="amount_paid"  widget="monetary" sum="Payé"/>
+                <field name="amount_return" widget="monetary"/>
+
+                <field name="to_invoice"/>
+                <field name="is_refund"/>
+                <field name="ticket_code"/>
+                <field name="mobile"/>
+                <field name="email"/>
+
+                <field name="currency_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_pos_order_paid_form" model="ir.ui.view">
+        <field name="name">pos.order.paid.form</field>
+        <field name="model">pos.order</field>
+        <field name="arch" type="xml">
+            <form string="Commande POS" create="false" delete="false">
+                <header>
+                    <button name="action_open_refund_wizard"
+                            string="Rembourser"
+                            type="object"
+                            class="btn-primary"
+                            invisible="not can_refund"/>
+                    <button name="action_view_refunds"
+                            string="Voir remboursements"
+                            type="object"
+                            invisible="refund_count == 0"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,paid,done,invoiced"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_refunds"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-undo"
+                                invisible="refund_count == 0">
+                            <field name="refund_count" widget="statinfo" string="Remboursements"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Informations">
+                            <field name="pos_reference"  readonly="1"/>
+                            <field name="date_order"     readonly="1"/>
+                            <field name="session_id"     readonly="1"/>
+                            <field name="config_id"      readonly="1"/>
+                            <field name="partner_id"     readonly="1"/>
+                            <field name="employee_id"    readonly="1"/>
+                            <field name="ticket_code"    readonly="1"/>
+                            <field name="source"         readonly="1"/>
+                        </group>
+
+                        <group string="Montants">
+                            <field name="currency_id"       invisible="1"/>
+                            <field name="amount_total"      widget="monetary" readonly="1"/>
+                            <field name="amount_tax"        widget="monetary" readonly="1"/>
+                            <field name="amount_paid"       widget="monetary" readonly="1"/>
+                            <field name="amount_return"     widget="monetary" readonly="1"/>
+                            <field name="tip_amount"        widget="monetary" readonly="1"/>
+                            <field name="amount_difference" widget="monetary" readonly="1"/>
+                            <field name="currency_rate"     readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Contact client">
+                        <field name="email"                 readonly="1"/>
+                        <field name="mobile"                readonly="1"/>
+                        <field name="general_customer_note" readonly="1"/>
+                        <field name="internal_note"/>
+                    </group>
+
+                    <!-- Champs pharmacy (invisibles, utilisés en code) -->
+                    <field name="can_refund"     invisible="1"/>
+                    <field name="refund_count"   invisible="1"/>
+
+                    <notebook>
+                        <page string="Lignes">
+                            <field name="lines" readonly="1">
+                                <list>
+                                    <field name="full_product_name"/>
+                                    <field name="qty"/>
+                                    <field name="price_unit"         widget="monetary"/>
+                                    <field name="discount"/>
+                                    <field name="price_subtotal"     widget="monetary"/>
+                                    <field name="price_subtotal_incl" widget="monetary"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Paiements">
+                            <field name="payment_ids" readonly="1">
+                                <list>
+                                    <field name="payment_method_id"/>
+                                    <field name="amount" widget="monetary"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_pos_order_paid_search" model="ir.ui.view">
+        <field name="name">pos.order.paid.search</field>
+        <field name="model">pos.order</field>
+        <field name="arch" type="xml">
+            <search string="Commandes POS">
+                <field name="name"/>
+                <field name="pos_reference"/>
+                <field name="partner_id"/>
+                <field name="employee_id"/>
+                <field name="session_id"/>
+                <field name="config_id"/>
+
+                <separator/>
+
+                <filter name="paid"     string="Payées"         domain="[('state','=','paid')]"/>
+                <filter name="done"     string="Terminées"      domain="[('state','=','done')]"/>
+                <filter name="invoiced" string="Facturées"      domain="[('state','=','invoiced')]"/>
+                <filter name="refunds"  string="Remboursements" domain="[('is_refund','=',True)]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_pos_order_paid_admin" model="ir.actions.act_window">
+        <field name="name">Commandes POS Payées</field>
+        <field name="res_model">pos.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', 'in', ['paid', 'done', 'invoiced'])]</field>
+        <field name="search_view_id" ref="view_pos_order_paid_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_pos_order_paid_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_pos_order_paid_form')}),
+        ]"/>
+    </record>
+
+</odoo>

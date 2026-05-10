@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+  <!-- ══════════════════════════════════════════════════════
+       VUE LISTE
+  ══════════════════════════════════════════════════════ -->
+  <record id="view_saas_client_list" model="ir.ui.view">
+    <field name="name">saas.client.list</field>
+    <field name="model">saas.client</field>
+    <field name="arch" type="xml">
+      <list>
+        <field name="name"/>
+        <field name="responsible"/>
+        <field name="phone"/>
+        <field name="admin_email"/>
+        <field name="subscription_end" string="Fin abonnement"/>
+        <field name="subscription" widget="badge"
+               decoration-success="subscription == 'active'"
+               decoration-danger="subscription == 'suspended'"/>
+        <field name="access_url" widget="url" string="URL"/>
+        <field name="state" widget="badge"
+               decoration-success="state == 'done'"
+               decoration-danger="state == 'failed'"
+               decoration-warning="state == 'creating'"/>
+      </list>
+    </field>
+  </record>
+
+  <!-- ══════════════════════════════════════════════════════
+       VUE FORMULAIRE
+  ══════════════════════════════════════════════════════ -->
+  <record id="view_saas_client_form" model="ir.ui.view">
+    <field name="name">saas.client.form</field>
+    <field name="model">saas.client</field>
+    <field name="arch" type="xml">
+      <form>
+        <header>
+          <button name="action_create_pharmacy" type="object"
+                  string="Créer la Pharmacie" class="btn-primary"
+                  invisible="state != 'draft'"/>
+          <button name="action_extend_1_month" type="object"
+                  string="+ 1 mois" class="btn-success"
+                  invisible="state != 'done'"/>
+          <button name="action_extend_3_months" type="object"
+                  string="+ 3 mois" class="btn-success"
+                  invisible="state != 'done'"/>
+          <button name="action_extend_6_months" type="object"
+                  string="+ 6 mois" class="btn-success"
+                  invisible="state != 'done'"/>
+          <button name="action_suspend_manual" type="object"
+                  string="Suspendre"
+                  invisible="subscription == 'suspended'"/>
+          <button name="action_open_url" type="object"
+                  string="Ouvrir l'espace client"
+                  invisible="state != 'done'"/>
+          <field name="subscription" widget="badge"
+                 decoration-success="subscription == 'active'"
+                 decoration-danger="subscription == 'suspended'"/>
+          <field name="state" widget="badge"
+                 decoration-success="state == 'done'"
+                 decoration-danger="state == 'failed'"/>
+        </header>
+
+        <sheet>
+          <group>
+
+            <!-- ── Informations pharmacie ── -->
+            <group string="Informations pharmacie">
+              <field name="name"        placeholder="Pharmacie Centrale"/>
+              <field name="responsible" placeholder="Dr. Ben Ali"/>
+              <field name="phone"       placeholder="+216 XX XXX XXX"/>
+              <field name="address"     placeholder="Rue de la République"/>
+              <field name="city"        placeholder="Tunis"/>
+            </group>
+
+            <!-- ── Compte administrateur ── -->
+            <group string="Compte administrateur">
+              <field name="admin_email" placeholder="admin@pharmacie.com"/>
+
+              <!--
+                TOGGLE MDP :
+                show_password=False → champ masqué (●●●●●) + bouton "Afficher"
+                show_password=True  → champ en clair  + bouton "Masquer"
+                Les deux pointent sur admin_password, conditions mutuellement exclusives.
+                show_password est store=True donc survit au rechargement.
+              -->
+
+              <!-- Champ masqué -->
+              <field name="admin_password"
+                     string="Mot de passe"
+                     password="True"
+                     readonly="1"
+                     invisible="show_password == True"
+                     groups="base.group_system"/>
+
+              <!-- Champ en clair -->
+              <field name="admin_password"
+                     string="Mot de passe"
+                     readonly="1"
+                     invisible="show_password == False"
+                     groups="base.group_system"/>
+
+              <!-- Champ booléen caché utilisé par les conditions invisible -->
+              <field name="show_password" invisible="1"/>
+
+              <!-- Boutons toggle -->
+              <div colspan="2" style="margin-top:4px">
+                <button name="action_toggle_password"
+                        type="object"
+                        string="👁 Afficher le mot de passe"
+                        class="btn-secondary btn-sm"
+                        invisible="show_password == True"/>
+                <button name="action_toggle_password"
+                        type="object"
+                        string=" Masquer le mot de passe"
+                        class="btn-secondary btn-sm"
+                        invisible="show_password == False"/>
+              </div>
+            </group>
+
+          </group>
+
+          <group>
+
+            <!-- ── Base de données ── -->
+            <group string="Base de données">
+              <field name="db_name"
+                     placeholder="pharma_centrale"
+                     invisible="state != 'draft'"/>
+              <field name="subdomain"  readonly="1"/>
+              <field name="access_url" readonly="1" widget="url"/>
+            </group>
+
+            <!-- ── Abonnement ── -->
+            <group string="Abonnement">
+              <!--
+                Date toujours éditable :
+                  • En draft : saisie manuelle via date picker
+                  • En done  : mise à jour par boutons +1/+3/+6 ou champ mois
+              -->
+              <field name="subscription_end" string="Actif jusqu'au"/>
+              <field name="subscription_months" string="Ajouter (mois)"/>
+              <div colspan="2">
+                <button name="action_set_subscription"
+                        type="object"
+                        string=" Appliquer"
+                        class="btn-primary btn-sm"/>
+              </div>
+            </group>
+
+          </group>
+
+          <!-- ── Alerte email non envoyé ── -->
+          <div invisible="not mail_error"
+               style="background:#fff3cd;border:1px solid #ffc107;
+                      padding:12px 16px;border-radius:4px;margin:8px 0;
+                      color:#856404">
+            <strong> Attention :</strong>
+            <field name="mail_error" readonly="1" nolabel="1"/>
+          </div>
+
+          <!-- ── Notes internes ── -->
+          <group string="Notes internes">
+            <field name="notes" nolabel="1" placeholder="Notes, observations..."/>
+          </group>
+
+        </sheet>
+      </form>
+    </field>
+  </record>
+
+  <!-- ══════════════════════════════════════════════════════
+       ACTION + MENU
+  ══════════════════════════════════════════════════════ -->
+  <record id="action_saas_client" model="ir.actions.act_window">
+    <field name="name">Pharmacies</field>
+    <field name="res_model">saas.client</field>
+    <field name="view_mode">list,form</field>
+  </record>
+
+  <menuitem id="menu_saas_root"   name="SaaS Pharma" sequence="10"/>
+  <menuitem id="menu_saas_client" name="Pharmacies"
+            parent="menu_saas_root" action="action_saas_client"/>
+
+</odoo>

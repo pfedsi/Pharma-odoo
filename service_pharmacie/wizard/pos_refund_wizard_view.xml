@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pos_refund_wizard_form" model="ir.ui.view">
+        <field name="name">pos.refund.wizard.form</field>
+        <field name="model">pos.refund.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Remboursement de commande POS">
+                <sheet>
+
+                    <!-- ── En-tête ── -->
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="fa fa-undo fa-lg text-warning"/>
+                        <h2 class="mb-0 text-warning fw-bold">Remboursement de commande</h2>
+                    </div>
+                    <p class="text-muted mb-3" style="font-size:0.92rem;">
+                        Vérifiez les quantités à rembourser avant de valider.
+                        Cette opération est <strong>irréversible</strong> et sera
+                        enregistrée dans la session POS active.
+                    </p>
+
+                    <div class="o_horizontal_separator mb-3"/>
+
+                    <!-- ── Commande d'origine ── -->
+                    <separator string="Commande d'origine"/>
+                    <group>
+                        <group>
+                            <field name="order_id"     readonly="1"
+                                   options="{'no_open': True}"/>
+                            <field name="order_name"   readonly="1" invisible="1"/>
+                            <field name="amount_total" readonly="1" widget="monetary"
+                                   string="Montant total"/>
+                        </group>
+                        <group>
+                            <field name="refund_reason" required="1"/>
+                            <field name="refund_note"
+                                   placeholder="Note interne (optionnel)…"/>
+                        </group>
+                    </group>
+
+                    <div class="o_horizontal_separator mb-3"/>
+
+                    <!-- ── Lignes ── -->
+                    <separator string="Lignes à rembourser"/>
+                   <field name="line_ids" nolabel="1">
+                        <list editable="bottom"
+                            decoration-muted="qty_remaining == 0"
+                            decoration-success="qty_to_refund > 0"
+                            decoration-warning="qty_already_refunded > 0 and qty_remaining > 0">
+                            <field name="order_line_id"       column_invisible="1"/>
+                            <field name="product_id"          readonly="1" string="Produit"/>
+                            <field name="qty_original"        readonly="1" string="Qté vendue"/>
+                            <field name="qty_already_refunded" readonly="1" string="Déjà remboursé"
+                                decoration-warning="qty_already_refunded > 0"/>
+                            <field name="qty_remaining"       readonly="1" string="Remboursable"
+                                decoration-danger="qty_remaining == 0"/>
+                            <field name="qty_to_refund"       string="Qté à rembourser"/>
+                            <field name="price_unit"          readonly="1" widget="monetary" string="Prix unit."/>
+                            <field name="price_subtotal"      readonly="1" widget="monetary" string="Sous-total TTC"/>
+                            <field name="amount_refund"       readonly="1" widget="monetary" string="Montant remboursé"/>
+                        </list>
+                    </field>
+
+                    <div class="o_horizontal_separator mt-3"/>
+
+                </sheet>
+
+                <footer>
+                    <button name="action_refund"
+                            string="Confirmer le remboursement"
+                            type="object"
+                            class="btn-primary"
+                            data-hotkey="v"/>
+                    <button string="Annuler"
+                            class="btn-secondary"
+                            special="cancel"
+                            data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>
