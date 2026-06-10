@@ -279,14 +279,32 @@ class PrescriptionApiController(http.Controller):
         product_id = payload.get("product_id")
         if not product_id:
             return {"success": False, "message": "Produit manquant."}
-        product = request.env["product.product"].sudo().browse(int(product_id))
+
+        pid = int(product_id)
+        product = request.env["product.product"].sudo().browse(pid)
+
+        # Fallback : si l'ID reçu est un product.template (et non product.product),
+        # résoudre la variante automatiquement.
         if not product.exists():
-            return {"success": False, "message": "Produit introuvable."}
+            tmpl = request.env["product.template"].sudo().browse(pid)
+            if tmpl.exists() and tmpl.product_variant_id:
+                product = tmpl.product_variant_id
+            else:
+                return {"success": False, "message": "Produit introuvable."}
+
+        product_tmpl = product.product_tmpl_id
+        price_unit = (
+            product_tmpl.prix_vente_tnd
+            if product_tmpl.is_medicament
+            else product.lst_price
+        )
+
         return {
             "success": True,
             "data": {
                 "id": product.id,
                 "display_name": product.display_name,
-                "lst_price": product.lst_price,
+                "lst_price": price_unit,
+                "price_unit": price_unit,
             },
         }

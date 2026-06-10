@@ -55,7 +55,8 @@
     <menuitem id="menu_pharmacy_root"
               name="Pharmacie"
               sequence="10"
-              web_icon="service_pharmacie,static/description/icon.png"/>
+              web_icon="service_pharmacie,static/description/icon.png"
+               groups="base.group_system"/>
 
     <!-- ══════════════════════════════════════════════════════════
          MÉDICAMENTS
@@ -168,5 +169,11 @@
               parent="menu_pharmacy_configuration"
               action="action_service_pharmacie_settings"
               sequence="10"/>
+
+    <menuitem id="menu_pharmacy_pos_workstation_assignment"
+              name="Affectations POS"
+              parent="menu_pharmacy_configuration"
+              action="action_pharmacy_pos_workstation_assignment"
+              sequence="20"/>
 
 </odoo>

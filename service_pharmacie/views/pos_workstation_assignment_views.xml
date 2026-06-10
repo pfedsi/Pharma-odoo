@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_pharmacy_pos_workstation_assignment_list" model="ir.ui.view">
+        <field name="name">pharmacy.pos.workstation.assignment.list</field>
+        <field name="model">pharmacy.pos.workstation.assignment</field>
+        <field name="arch" type="xml">
+            <list string="Affectations POS"
+                  decoration-muted="active == False"
+                  multi_edit="1">
+                <field name="poste_number"/>
+                <field name="employee_id"/>
+                <field name="user_id"/>
+                <field name="pos_config_id"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pharmacy_pos_workstation_assignment_form" model="ir.ui.view">
+        <field name="name">pharmacy.pos.workstation.assignment.form</field>
+        <field name="model">pharmacy.pos.workstation.assignment</field>
+        <field name="arch" type="xml">
+            <form string="Affectation POS">
+                <sheet>
+                    <group string="Affectation fixe">
+                        <field name="employee_id"/>
+                        <field name="user_id" readonly="1"/>
+                        <field name="pos_config_id"/>
+                        <field name="poste_number"/>
+                        <field name="active" widget="boolean_toggle"/>
+                    </group>
+                    <group string="Note">
+                        <field name="note" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pharmacy_pos_workstation_assignment_search" model="ir.ui.view">
+        <field name="name">pharmacy.pos.workstation.assignment.search</field>
+        <field name="model">pharmacy.pos.workstation.assignment</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher une affectation POS">
+                <field name="employee_id"/>
+                <field name="user_id"/>
+                <field name="pos_config_id"/>
+                <field name="poste_number"/>
+                <filter name="filter_active"
+                        string="Actives"
+                        domain="[('active','=',True)]"/>
+                <filter name="filter_inactive"
+                        string="Archivées"
+                        domain="[('active','=',False)]"/>
+                <separator/>
+                <filter name="group_by_pos"
+                        string="Par point de vente"
+                        context="{'group_by':'pos_config_id'}"/>
+                <filter name="group_by_employee"
+                        string="Par employé"
+                        context="{'group_by':'employee_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_pharmacy_pos_workstation_assignment" model="ir.actions.act_window">
+        <field name="name">Affectations POS</field>
+        <field name="res_model">pharmacy.pos.workstation.assignment</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_pharmacy_pos_workstation_assignment_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créer une affectation POS
+            </p>
+            <p>
+                Affectez un employé lié à un utilisateur Odoo à un point de vente et à un numéro de poste fixe.
+            </p>
+        </field>
+    </record>
+
+</odoo>

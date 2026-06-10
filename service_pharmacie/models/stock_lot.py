@@ -15,6 +15,13 @@ class StockLot(models.Model):
         digits=(16, 2),
     )
 
+    date_expiration = fields.Date(
+        string="Date d'expiration",
+        help="Date d'expiration du lot de médicament.",
+        store=True,
+        index=True,
+    )
+
     state = fields.Selection(
         [
             ("disponible", "Disponible"),

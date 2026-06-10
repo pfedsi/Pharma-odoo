@@ -11,7 +11,7 @@
 
                     <div class="ratt-cell ratt-cell--poste">
                         <span class="ratt-cell__label">Poste</span>
-                        <span id="rattachement-poste-label" class="ratt-cell__val">1</span>
+                        <span id="rattachement-poste-label" class="ratt-cell__val">—</span>
                     </div>
 
                     <div class="ratt-sep"/>
@@ -29,7 +29,6 @@
                             <span id="rattachement-mode-label" class="ratt-badge ratt-badge--aucun">Aucun</span>
                         </div>
                         <div class="ratt-status-row">
-                            <span class="ratt-cell__label">File</span>
                             <span id="rattachement-queue-label" class="ratt-cell__queue">—</span>
                         </div>
                     </div>
@@ -87,9 +86,9 @@
                         </button>
                     </div>
 
-                    <!-- ① SÉLECTEUR DE POSTE -->
+                    <!-- ① POSTE FIXE -->
                     <div class="ratt-poste-section">
-                        <div class="ratt-section-title">Poste de travail</div>
+                        <div class="ratt-section-title">Poste de travail fixe</div>
                         <div class="ratt-poste-selector__grid" id="ratt-poste-grid">
                             <!-- injecté par JS -->
                         </div>

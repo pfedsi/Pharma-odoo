@@ -64,6 +64,20 @@ class PharmacyRattachement(models.Model):
         string="Numéro de poste",
         default="1",
         tracking=True,
+        readonly=True,
+    )
+    pos_assignment_id = fields.Many2one(
+        "pharmacy.pos.workstation.assignment",
+        string="Affectation POS",
+        readonly=True,
+        ondelete="set null",
+    )
+    pos_config_id = fields.Many2one(
+        "pos.config",
+        string="Point de vente",
+        related="pos_assignment_id.pos_config_id",
+        store=True,
+        readonly=True,
     )
     service_prioritaire_id = fields.Many2one(
         "pharmacy.service",
@@ -174,6 +188,29 @@ class PharmacyRattachement(models.Model):
 
         return rattachement
 
+    def _get_active_pos_assignment_for_user(self, user):
+        employee = self.env["hr.employee"].sudo().with_context(active_test=False).search([
+            ("user_id", "=", user.id),
+        ], limit=1)
+        if not employee:
+            return self.env["pharmacy.pos.workstation.assignment"]
+        return self.env["pharmacy.pos.workstation.assignment"].sudo().search([
+            ("employee_id", "=", employee.id),
+            ("active", "=", True),
+        ], limit=1)
+
+    def _get_fixed_poste_vals_for_user(self, user, fallback_poste="1"):
+        assignment = self._get_active_pos_assignment_for_user(user)
+        if assignment:
+            return {
+                "poste_number": assignment.poste_number or fallback_poste or "1",
+                "pos_assignment_id": assignment.id,
+            }
+        return {
+            "poste_number": fallback_poste or "1",
+            "pos_assignment_id": False,
+        }
+
     def _get_next_waiting_ticket(self, queue):
         """Retourne le prochain ticket en attente dans une file."""
         return self.env["pharmacy.ticket"].search([
@@ -269,6 +306,7 @@ class PharmacyRattachement(models.Model):
     @api.model
     def pos_get_my_rattachement(self):
         user         = self.env.user
+        assignment = self._get_active_pos_assignment_for_user(user)
         rattachement = self.search([
             ("assistant_id", "=", user.id),
             ("active",       "=", True),
@@ -281,10 +319,23 @@ class PharmacyRattachement(models.Model):
                 "user_id":             user.id,
                 "queue_id":            False,
                 "queue_name":          False,
-                "poste_number":        False,
+                "poste_number":        assignment.poste_number if assignment else False,
+                "poste_locked":        bool(assignment),
+                "pos_config_id":       assignment.pos_config_id.id if assignment else False,
+                "pos_config_name":     assignment.pos_config_id.name if assignment else False,
                 "current_ticket_id":   False,
                 "current_ticket_name": False,
             }
+
+        poste_vals = self._get_fixed_poste_vals_for_user(
+            user,
+            fallback_poste=rattachement.poste_number or "1",
+        )
+        if (
+            poste_vals["poste_number"] != rattachement.poste_number
+            or poste_vals["pos_assignment_id"] != (rattachement.pos_assignment_id.id if rattachement.pos_assignment_id else False)
+        ):
+            rattachement.sudo().write(poste_vals)
 
         return {
             "found":               True,
@@ -293,6 +344,9 @@ class PharmacyRattachement(models.Model):
             "queue_id":            rattachement.file_id.id            if rattachement.file_id            else False,
             "queue_name":          rattachement.file_id.display_name  if rattachement.file_id            else False,
             "poste_number":        rattachement.poste_number          or False,
+            "poste_locked":        bool(rattachement.pos_assignment_id),
+            "pos_config_id":       rattachement.pos_config_id.id       if rattachement.pos_config_id      else False,
+            "pos_config_name":     rattachement.pos_config_id.name     if rattachement.pos_config_id      else False,
             "current_ticket_id":   rattachement.current_ticket_id.id  if rattachement.current_ticket_id  else False,
             "current_ticket_name": rattachement.current_ticket_id.name if rattachement.current_ticket_id else False,
         }
@@ -317,7 +371,10 @@ class PharmacyRattachement(models.Model):
             ("active", "=", True),
         ], order="date_debut desc", limit=1)
 
-        new_poste = str(poste_number) if poste_number else "1"
+        poste_vals = self._get_fixed_poste_vals_for_user(
+            user,
+            fallback_poste=rattachement.poste_number if rattachement else "1",
+        )
         new_file_prioritaire_id = queue.id if mode_rattachement == "prioritaire" else False
 
         vals = {
@@ -325,7 +382,8 @@ class PharmacyRattachement(models.Model):
             "mode_rattachement": mode_rattachement,
             "file_id": queue.id,
             "service_prioritaire_id": service_prioritaire_id or False,
-            "poste_number": new_poste,
+            "poste_number": poste_vals["poste_number"],
+            "pos_assignment_id": poste_vals["pos_assignment_id"],
             "file_prioritaire_id": new_file_prioritaire_id,
         }
 
@@ -334,7 +392,8 @@ class PharmacyRattachement(models.Model):
                 rattachement.mode_rattachement != mode_rattachement
                 or (rattachement.file_id.id if rattachement.file_id else False) != queue.id
                 or (rattachement.service_prioritaire_id.id if rattachement.service_prioritaire_id else False) != (service_prioritaire_id or False)
-                or (rattachement.poste_number or "1") != new_poste
+                or (rattachement.poste_number or "1") != poste_vals["poste_number"]
+                or (rattachement.pos_assignment_id.id if rattachement.pos_assignment_id else False) != poste_vals["pos_assignment_id"]
                 or (rattachement.file_prioritaire_id.id if rattachement.file_prioritaire_id else False) != new_file_prioritaire_id
             )
 
@@ -352,6 +411,9 @@ class PharmacyRattachement(models.Model):
             "queue_id": queue.id,
             "queue_name": queue.display_name,
             "poste_number": rattachement.poste_number,
+            "poste_locked": bool(rattachement.pos_assignment_id),
+            "pos_config_id": rattachement.pos_config_id.id if rattachement.pos_config_id else False,
+            "pos_config_name": rattachement.pos_config_id.name if rattachement.pos_config_id else False,
             "current_ticket_id": rattachement.current_ticket_id.id if rattachement.current_ticket_id else False,
             "current_ticket_name": rattachement.current_ticket_id.name if rattachement.current_ticket_id else False,
         }
@@ -418,18 +480,23 @@ class PharmacyRattachement(models.Model):
                     if mobile_order.prescription_id:
                         prescription_payload = mobile_order.prescription_id.export_mobile_payload()
 
-                    mobile_order_lines_payload = [{
-                        "id": line.id,
-                        "name": line.name,
-                        "quantity": line.quantity,
-                        "price_unit": line.price_unit,
-                        "subtotal": line.subtotal,
-                        "source_type": line.source_type,
-                        "product_tmpl_id": line.product_tmpl_id.id if line.product_tmpl_id else False,
-                        "product_tmpl_name": line.product_tmpl_id.display_name if line.product_tmpl_id else False,
-                        "prescription_id": line.prescription_id.id if line.prescription_id else False,
-                        "prescription_line_id": line.prescription_line_id.id if line.prescription_line_id else False,
-                    } for line in mobile_order.line_ids]
+                    mobile_order_lines_payload = []
+                    for line in mobile_order.line_ids:
+                        # Résoudre la variante product.product à partir du template
+                        variant = line.product_tmpl_id.product_variant_id if line.product_tmpl_id else False
+                        mobile_order_lines_payload.append({
+                            "id": line.id,
+                            "name": line.name,
+                            "quantity": line.quantity,
+                            "price_unit": line.price_unit,
+                            "subtotal": line.subtotal,
+                            "source_type": line.source_type,
+                            "product_id": variant.id if variant else False,
+                            "product_tmpl_id": line.product_tmpl_id.id if line.product_tmpl_id else False,
+                            "product_tmpl_name": line.product_tmpl_id.display_name if line.product_tmpl_id else False,
+                            "prescription_id": line.prescription_id.id if line.prescription_id else False,
+                            "prescription_line_id": line.prescription_line_id.id if line.prescription_line_id else False,
+                        })
 
             _logger.info("Appel ticket %s", next_ticket.name)
             next_ticket.action_appeler()

@@ -324,7 +324,6 @@ class PharmacyPrescription(models.Model):
     # ─────────────────────────────────────────────────────────────────────
     # ÉVALUATION DISPONIBILITÉ
     # ─────────────────────────────────────────────────────────────────────
-
     def _find_equivalent_product(self, product_tmpl):
         self.ensure_one()
 
@@ -350,16 +349,7 @@ class PharmacyPrescription(models.Model):
             if generic_match:
                 return generic_match[0]
 
-        if product_tmpl.dosage:
-            normalized_dosage = self._normalize_text(product_tmpl.dosage)
-            dosage_match = available_candidates.filtered(
-                lambda p: self._normalize_text(p.dosage) == normalized_dosage
-            )
-            if dosage_match:
-                return dosage_match[0]
-
-        return available_candidates[0] if available_candidates else False
-
+        return False
     def _evaluate_confirmed_medication(self, line):
         product = line.product_id.product_tmpl_id if line.product_id else False
 
@@ -521,7 +511,9 @@ class PharmacyPrescription(models.Model):
         prix_ttc = 0.0
         if product_tmpl:
             prix_ttc = float(
-                product_tmpl.prix_vente_tnd or product_tmpl.list_price or 0.0
+                product_tmpl.prix_vente_tnd
+                if product_tmpl.is_medicament
+                else (product_tmpl.list_price or 0.0)
             )
 
         # ── Image URL (toujours basée sur le template) ────────────────────

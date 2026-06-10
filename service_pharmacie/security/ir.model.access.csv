@@ -7,7 +7,7 @@ access_pharmacy_ticket_user,pharmacy.ticket.user,model_pharmacy_ticket,base.grou
 access_pharmacy_ticket_manager,pharmacy.ticket.manager,model_pharmacy_ticket,base.group_system,1,1,1,1
 access_pharmacy_reservation_user,pharmacy.reservation.user,model_pharmacy_reservation,base.group_user,1,1,1,0
 access_pharmacy_reservation_manager,pharmacy.reservation.manager,model_pharmacy_reservation,base.group_system,1,1,1,1
-access_pharmacy_rattachement_user,pharmacy.rattachement.user,model_pharmacy_rattachement,base.group_user,1,0,0,0
+access_pharmacy_rattachement_user,pharmacy.rattachement.user,model_pharmacy_rattachement,base.group_user,1,1,1,0
 access_pharmacy_rattachement_manager,pharmacy.rattachement.manager,model_pharmacy_rattachement,base.group_system,1,1,1,1
 access_pharmacy_service_horaire_user,pharmacy.service.horaire.user,model_pharmacy_service_horaire,base.group_user,1,0,0,0
 access_pharmacy_service_horaire_manager,pharmacy.service.horaire.manager,model_pharmacy_service_horaire,base.group_system,1,1,1,1
@@ -22,5 +22,7 @@ access_pharmacy_mobile_order_user,access.pharmacy.mobile.order.user,model_pharma
 access_pharmacy_mobile_order_line_user,access.pharmacy.mobile.order.line.user,model_pharmacy_mobile_order_line,base.group_user,1,1,1,0
 access_pharmacy_mobile_order_manager,access.pharmacy.mobile.order.manager,model_pharmacy_mobile_order,base.group_system,1,1,1,1
 access_pharmacy_mobile_order_line_manager,access.pharmacy.mobile.order.line.manager,model_pharmacy_mobile_order_line,base.group_system,1,1,1,1
+access_pharmacy_pos_workstation_assignment_user,pharmacy.pos.workstation.assignment.user,model_pharmacy_pos_workstation_assignment,base.group_user,1,0,0,0
+access_pharmacy_pos_workstation_assignment_manager,pharmacy.pos.workstation.assignment.manager,model_pharmacy_pos_workstation_assignment,base.group_system,1,1,1,1
 access_pos_refund_wizard_manager,pos.refund.wizard manager,model_pos_refund_wizard,point_of_sale.group_pos_manager,1,1,1,1
 access_pos_refund_wizard_line_manager,pos.refund.wizard.line manager,model_pos_refund_wizard_line,point_of_sale.group_pos_manager,1,1,1,1

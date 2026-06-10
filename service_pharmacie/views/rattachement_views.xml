@@ -15,6 +15,7 @@
                 <field name="assistant_id"/>
                 <field name="file_id"/>
                 <field name="mode_rattachement"/>
+                <field name="pos_config_id"/>
                 <field name="poste_number"/>
                 <field name="service_prioritaire_id"/>
                 <field name="date_debut"/>
@@ -38,7 +39,10 @@
                         <field name="display_name" readonly="1"/>
                         <field name="assistant_id"/>
                         <field name="file_id"/>
-                        <field name="poste_number"/>
+                        <field name="pos_assignment_id"/>
+                        <field name="pos_config_id"/>
+                        <field name="poste_number"
+                               help="Numéro fixé dans Configuration > Affectations POS."/>
                         <field name="mode_rattachement"
                                widget="radio"
                                options="{'horizontal': True}"/>
@@ -75,6 +79,7 @@
             <search string="Rechercher un rattachement">
                 <field name="assistant_id"/>
                 <field name="file_id"/>
+                <field name="pos_config_id"/>
                 <field name="poste_number"/>
                 <filter string="Actifs"
                         name="filter_active"

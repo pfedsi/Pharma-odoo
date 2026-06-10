@@ -4,6 +4,7 @@ import { rpc } from "@web/core/network/rpc";
 
 // ── État ────────────────────────────────────────────────────────
 let selectedPoste = "1";
+let posteLocked = false;
 let liveTimer = null;
 let currentScannedPrescription = null;
 
@@ -12,12 +13,27 @@ const byId = (id) => document.getElementById(id);
 const getMenu = () => byId("rattachement-menu");
 const getSublist = () => byId("rattachement-sublist");
 
+function applyPosteToDom() {
+    const poste = selectedPoste || "—";
+    const posteEl = byId("rattachement-poste-label");
+    if (posteEl) {
+        posteEl.textContent = poste;
+    }
+    renderPosteGrid();
+}
+
+function syncPosteFromResponse(response) {
+    selectedPoste = response?.poste_number || selectedPoste || "—";
+    posteLocked = !!response?.poste_locked;
+    applyPosteToDom();
+}
+
 // ── Menu ────────────────────────────────────────────────────────
 function openMenu() {
     const m = getMenu();
     if (!m) return;
     m.classList.add("is-open");
-    renderPosteGrid();
+    applyPosteToDom();
     startLive();
 }
 
@@ -40,20 +56,16 @@ function renderPosteGrid() {
     const grid = byId("ratt-poste-grid");
     if (!grid) return;
 
-    grid.innerHTML = Array.from({ length: 10 }, (_, i) => {
-        const n = String(i + 1);
-        return `<button type="button" class="ratt-poste-btn${selectedPoste === n ? " active" : ""}" data-poste="${n}">${n}</button>`;
-    }).join("");
-
-    grid.querySelectorAll(".ratt-poste-btn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-            selectedPoste = btn.dataset.poste;
-            renderPosteGrid();
-        });
-    });
+    grid.innerHTML = `
+        <button type="button" class="ratt-poste-btn active" disabled>
+            ${selectedPoste || "1"}
+        </button>
+        <span style="font-size:11px;color:#64748b;align-self:center;">
+            ${posteLocked ? "Fixé par l'affectation POS" : "Aucune affectation POS fixe"}
+        </span>
+    `;
 }
 
-// ── Badge mode ───────────────────────────────────────────────────
 const MODE_META = {
     manuel: { label: "Manuel", cls: "ratt-badge--manuel" },
     auto_attente: { label: "Automatique", cls: "ratt-badge--auto" },
@@ -71,7 +83,7 @@ function updateStatus(mode, queueName, posteNumber = false) {
         modeEl.className = `ratt-badge ${meta.cls}`;
     }
     if (queueEl) queueEl.textContent = queueName || "—";
-    if (posteEl) posteEl.textContent = posteNumber || "1";
+    if (posteEl) posteEl.textContent = posteNumber || selectedPoste || "—";
 
     document.querySelectorAll(".ratt-mode-btn").forEach((btn) => {
         btn.classList.toggle("is-active", btn.dataset.mode === mode);
@@ -101,7 +113,7 @@ function bindQueueCardClicks() {
         card.onclick = () => {
             const queueId = parseInt(card.dataset.queueId || "0", 10);
             if (queueId) {
-                setRattachement("manuel", queueId, false, selectedPoste);
+                setRattachement("manuel", queueId, false);
             }
         };
     });
@@ -184,7 +196,7 @@ function renderQueueList(queues) {
 
     sub.querySelectorAll(".ratt-sublist-item").forEach((btn) => {
         btn.addEventListener("click", () =>
-            setRattachement("manuel", parseInt(btn.dataset.id, 10), false, selectedPoste)
+            setRattachement("manuel", parseInt(btn.dataset.id, 10), false)
         );
     });
 }
@@ -200,7 +212,7 @@ function renderServiceList(services) {
 
     sub.querySelectorAll(".ratt-sublist-item").forEach((btn) => {
         btn.addEventListener("click", () =>
-            setRattachement("prioritaire", false, parseInt(btn.dataset.id, 10), selectedPoste)
+            setRattachement("prioritaire", false, parseInt(btn.dataset.id, 10))
         );
     });
 }
@@ -209,7 +221,7 @@ function renderServiceList(services) {
 async function loadCurrentRattachement() {
     try {
         const r = await rpc("/pos/rattachement/current", {});
-        selectedPoste = r.poste_number || "1";
+        syncPosteFromResponse(r);
         updateStatus(r.mode, r.queue_name, r.poste_number);
         updateTicket(r.current_ticket_name);
     } catch (e) {
@@ -217,14 +229,14 @@ async function loadCurrentRattachement() {
     }
 }
 
-async function setRattachement(mode, fileId = false, serviceId = false, posteNumber = "1") {
+async function setRattachement(mode, fileId = false, serviceId = false) {
     try {
         const r = await rpc("/pos/rattachement/set", {
             mode_rattachement: mode,
             file_id: fileId,
             service_prioritaire_id: serviceId,
-            poste_number: posteNumber,
         });
+        syncPosteFromResponse(r);
         updateStatus(r.mode, r.queue_name, r.poste_number);
         updateTicket(r.current_ticket_name);
         closeMenu();
@@ -262,16 +274,23 @@ async function callNextTicket() {
         if (r?.mobile_order_lines?.length) {
             console.log("Panier mobile complet =", r.mobile_order_lines);
             switchToCaisseTab();
-            const items = r.mobile_order_lines.map(l => ({
-                name: l.name,
-                description: `Source : ${l.source_type || "-"} | Qté : ${l.quantity || 1}`,
-                productName: `Prix : ${Number(l.price_unit || 0).toFixed(2)}`,
-                message: "",
-                productId: l.product_id || l.product_tmpl_id,
-                lineId: l.id || 0,
-                quantity: l.quantity || 1,
-                isFound: !!(l.product_id || l.product_tmpl_id)
-            }));
+            const items = r.mobile_order_lines.map(l => {
+                const resolvedProductId = l.product_id || l.product_tmpl_id;
+                console.log(
+                    `[panier] ligne="${l.name}" product_id=${l.product_id} product_tmpl_id=${l.product_tmpl_id} → résolu=${resolvedProductId}`
+                );
+                return {
+                    name: l.name,
+                    description: `Source : ${l.source_type || "-"} | Qté : ${l.quantity || 1}`,
+                    productName: `Prix : ${Number(l.price_unit || 0).toFixed(2)}`,
+                    message: "",
+                    productId: resolvedProductId,
+                    lineId: l.id || 0,
+                    quantity: l.quantity || 1,
+                    priceUnit: l.price_unit || 0,
+                    isFound: !!resolvedProductId
+                };
+            });
             renderImportedLinesInCaisse("Panier mobile", items);
             showPrescriptionToast("Panier mobile chargé automatiquement", "success");
         }
@@ -923,19 +942,21 @@ async function addScannedProductToCurrentOrder(productId, lineId, btn = null, qu
         const productData = result.data;
         console.log("Produit POS à ajouter =", productData);
 
-        let added = false;
-        for (let i = 0; i < quantity; i++) {
-            const res = clickNativeProductCard(productData);
-            if (res) added = true;
-        }
-
-        if (!added) {
-            showPrescriptionToast(
-                "Produit trouvé mais carte introuvable dans la grille POS.",
-                "error"
-            );
-            return;
-        }
+        window.dispatchEvent(new CustomEvent("prescription-scanned", {
+            detail: {
+                internalAddOnly: true,
+                prescriptionId: null,
+                data: {
+                    medications: [{
+                        product_id: productData.id,
+                        line_id: lineId,
+                        quantity,
+                        name: "",
+                        price_unit: productData.price_unit ?? productData.lst_price ?? 0,
+                    }],
+                },
+            },
+        }));
 
         if (btn) {
             btn.disabled = true;
@@ -1139,6 +1160,7 @@ function renderImportedLinesInCaisse(title, items) {
                                             data-line-id="${item.lineId || ""}"
                                             data-product-id="${item.productId || ""}"
                                             data-quantity="${item.quantity || 1}"
+                                            data-price-unit="${item.priceUnit || ""}"
                                             style="border:none;background:${ok ? "#2563eb" : "#cbd5e1"};color:#fff;border-radius:8px;padding:7px 10px;cursor:${ok ? "pointer" : "not-allowed"};font-size:12px;font-weight:700;"
                                             ${ok ? "" : "disabled"}>
                                         Ajouter à la commande
@@ -1177,7 +1199,7 @@ window.addEventListener("select-rattachement-mode", async (ev) => {
     const { mode } = ev.detail;
     try {
         if (mode === "auto_attente") {
-            await setRattachement("auto_attente", false, false, selectedPoste || "1");
+            await setRattachement("auto_attente", false, false);
             return;
         }
         if (mode === "manuel") {
@@ -1205,6 +1227,7 @@ window.addEventListener("open-prescription-scan", () => {
 window.addEventListener("prescription-scanned", async (ev) => {
     const payload = ev.detail || {};
     const data    = payload.data || {};
+    if (payload.internalAddOnly) return;
 
     currentScannedPrescription = payload;
     console.log("Prescription scannée reçue dans POS =", payload);
@@ -1219,6 +1242,7 @@ window.addEventListener("prescription-scanned", async (ev) => {
         productId:   m.product_id,
         lineId:      m.line_id,
         quantity:    1,
+        priceUnit:   m.price_unit ?? m.prix_ttc ?? m.prix_vente_tnd ?? 0,
         isFound:     !!m.product_id,
     }));
     renderImportedLinesInCaisse("Ordonnance scannée", items);
@@ -1231,3 +1255,5 @@ document.addEventListener("click", (ev) => {
 
 // Init
 setTimeout(() => loadCurrentRattachement(), 800);
+setTimeout(() => applyPosteToDom(), 1400);
+setTimeout(() => applyPosteToDom(), 2200);

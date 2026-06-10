@@ -19,3 +19,5 @@ from . import stock_lot
 from . import pos_order_stock_fix
 from . import pos_order
 from . import pos_product
+from . import res_users
+from . import pos_workstation_assignment

@@ -14,7 +14,6 @@ class SaasClient(models.Model):
     _name = 'saas.client'
     _description = 'Client SaaS Pharmacie'
 
-    # ── Informations pharmacie ────────────────────────────────
     name        = fields.Char('Nom pharmacie', required=True)
     db_name     = fields.Char('Nom base de données', required=True)
     phone       = fields.Char('Téléphone', required=True)
@@ -260,7 +259,7 @@ class SaasClient(models.Model):
         try:
             self.env['mail.mail'].create({
                 'subject': subject,
-                'email_from': 'Q-Pharma TN <rayenzekri9@gmail.com>',
+                'email_from': 'Q-Pharma TN <luffy.onepiece02020@gmail.com>',
                 'email_to': self.admin_email,
                 'body_html': body,
             }).send()

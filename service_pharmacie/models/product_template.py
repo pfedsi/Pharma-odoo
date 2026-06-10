@@ -55,6 +55,12 @@ class ProductTemplate(models.Model):
         search="_search_alerte_stock",
         store=False,
     )
+    rupture_stock = fields.Boolean(
+        string="Rupture de stock",
+        compute="_compute_rupture_stock",
+        search="_search_rupture_stock",
+        store=False,
+    )
     lot_count = fields.Integer(
         string="Nombre de Lots",
         compute="_compute_lot_count",
@@ -97,6 +103,32 @@ class ProductTemplate(models.Model):
                 )
                 rec.invalidate_recordset(["type"])
 
+    def _sync_list_price_from_prix_vente_tnd(self):
+        for rec in self.filtered("is_medicament"):
+            if "list_price" not in rec._fields:
+                continue
+            price = rec.prix_vente_tnd or 0.0
+            if rec.list_price != price:
+                rec.with_context(skip_pharmacie=True).write({"list_price": price})
+
+    def init(self):
+        super().init()
+        self.env.cr.execute("""
+            SELECT COUNT(*)
+            FROM information_schema.columns
+            WHERE table_name = 'product_template'
+              AND column_name IN ('is_medicament', 'prix_vente_tnd')
+        """)
+        if self.env.cr.fetchone()[0] < 2:
+            return
+
+        self.env.cr.execute("""
+            UPDATE product_template
+               SET list_price = COALESCE(prix_vente_tnd, 0)
+             WHERE is_medicament = TRUE
+               AND list_price IS DISTINCT FROM COALESCE(prix_vente_tnd, 0)
+        """)
+
     # ─────────────────────────────────────────────────────────────────────
     # CREATE
     # ─────────────────────────────────────────────────────────────────────
@@ -117,6 +149,7 @@ class ProductTemplate(models.Model):
                         vals["name"] = name
         records = super().create(vals_list)
         records.filtered("is_medicament")._force_storable_type()
+        records.filtered("is_medicament")._sync_list_price_from_prix_vente_tnd()
         return records
 
     # ─────────────────────────────────────────────────────────────────────
@@ -159,6 +192,7 @@ class ProductTemplate(models.Model):
             super(ProductTemplate, others).write(vals)
 
         (becoming | existing)._force_storable_type()
+        (becoming | existing)._sync_list_price_from_prix_vente_tnd()
 
         if {"nom_commercial", "nom_generique", "dosage"} & set(vals.keys()):
             for rec in (becoming | existing):
@@ -269,7 +303,13 @@ class ProductTemplate(models.Model):
     @api.depends("quantite_stock", "seuil_alerte_stock")
     def _compute_alerte_stock(self):
         for rec in self:
-            rec.alerte_stock = (rec.quantite_stock or 0.0) < (rec.seuil_alerte_stock or 0.0)
+            qty = rec.quantite_stock or 0.0
+            rec.alerte_stock = qty > 0 and qty < (rec.seuil_alerte_stock or 0.0)
+
+    @api.depends("quantite_stock")
+    def _compute_rupture_stock(self):
+        for rec in self:
+            rec.rupture_stock = (rec.quantite_stock or 0.0) <= 0.0
 
     def _compute_lot_count(self):
         Lot = self.env["stock.lot"]
@@ -282,9 +322,22 @@ class ProductTemplate(models.Model):
         if operator not in ("=", "!="):
             raise ValidationError(_("Opérateur non supporté pour alerte_stock."))
         products = self.search([]).filtered(
-            lambda p: (p.quantite_stock or 0.0) < (p.seuil_alerte_stock or 0.0)
+            lambda p: (p.quantite_stock or 0.0) > 0
+            and (p.quantite_stock or 0.0) < (p.seuil_alerte_stock or 0.0)
         )
         ids    = products.ids
+        wanted = bool(value)
+        if operator == "!=":
+            wanted = not wanted
+        return [("id", "in", ids)] if wanted else [("id", "not in", ids)]
+
+    def _search_rupture_stock(self, operator, value):
+        if operator not in ("=", "!="):
+            raise ValidationError(_("Opérateur non supporté pour rupture_stock."))
+        products = self.search([]).filtered(
+            lambda p: (p.quantite_stock or 0.0) <= 0.0
+        )
+        ids = products.ids
         wanted = bool(value)
         if operator == "!=":
             wanted = not wanted
@@ -339,6 +392,10 @@ class ProductTemplate(models.Model):
             "name": _("Inventaire Pharmacie"),
             "res_model": "stock.lot",
             "view_mode": "list,form",
+            "views": [
+                (self.env.ref("service_pharmacie.view_stock_lot_tree_pharmacie").id, "list"),
+                (self.env.ref("service_pharmacie.view_stock_lot_form_pharmacie").id, "form"),
+            ],
             "domain": [("product_id", "in", self.product_variant_ids.ids)],
         }
 
